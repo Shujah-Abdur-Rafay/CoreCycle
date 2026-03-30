@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 
+export interface CourseResource {
+  id: string;
+  course_id: string;
+  title: string;
+  resource_type: 'file' | 'link';
+  url: string;
+  file_type: string | null;
+  created_at: string;
+}
+
 export interface AdminCourse {
   id: string;
   title: string;
@@ -290,6 +300,98 @@ export function useAdminModules(courseId: string | undefined) {
     deleteModule,
     reorderModules,
     refetch: fetchModules
+  };
+}
+
+export function useCourseResources(courseId: string | undefined) {
+  const [resources, setResources] = useState<CourseResource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchResources = async () => {
+    if (!courseId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data, error: fetchError } = await supabase
+        .from('course_resources')
+        .select('*')
+        .eq('course_id', courseId)
+        .order('created_at', { ascending: true });
+      if (fetchError) throw fetchError;
+      setResources((data || []) as CourseResource[]);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addResource = async (
+    resource: Pick<CourseResource, 'title' | 'resource_type' | 'url' | 'file_type'>
+  ): Promise<CourseResource> => {
+    const { data, error } = await supabase
+      .from('course_resources')
+      .insert({ course_id: courseId!, ...resource })
+      .select()
+      .single();
+    if (error) throw error;
+    setResources(prev => [...prev, data as CourseResource]);
+    return data as CourseResource;
+  };
+
+  const deleteResource = async (resourceId: string) => {
+    // If it's a file stored in Supabase storage, remove it too
+    const resource = resources.find(r => r.id === resourceId);
+    if (resource?.resource_type === 'file') {
+      // Extract storage path from public URL
+      const url = resource.url;
+      const storagePathMatch = url.match(/course-resources\/(.+)$/);
+      if (storagePathMatch) {
+        await supabase.storage
+          .from('course-resources')
+          .remove([storagePathMatch[1]]);
+      }
+    }
+    const { error } = await supabase
+      .from('course_resources')
+      .delete()
+      .eq('id', resourceId);
+    if (error) throw error;
+    setResources(prev => prev.filter(r => r.id !== resourceId));
+  };
+
+  const uploadResourceFile = async (file: File): Promise<{ url: string; file_type: string }> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${courseId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('course-resources')
+      .upload(filePath, file);
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('course-resources')
+      .getPublicUrl(filePath);
+
+    return { url: publicUrl, file_type: file.type };
+  };
+
+  useEffect(() => {
+    fetchResources();
+  }, [courseId]);
+
+  return {
+    resources,
+    loading,
+    error,
+    addResource,
+    deleteResource,
+    uploadResourceFile,
+    refetch: fetchResources,
   };
 }
 

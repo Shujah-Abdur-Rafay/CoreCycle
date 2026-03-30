@@ -3,6 +3,7 @@ import { useSMEReports } from "@/hooks/useSMEReports";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { ExportButton } from "@/components/admin/ExportButton";
 import {
   Table,
   TableBody,
@@ -67,9 +68,12 @@ export function SMEReports() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-display font-bold text-foreground">SME Reports</h2>
-        <p className="text-muted-foreground">Course completion rates and training metrics by SME organization</p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-foreground">SME Reports</h2>
+          <p className="text-muted-foreground">Course completion rates and training metrics by SME organization</p>
+        </div>
+        <ExportButton type="sme_report" label="SME Performance Report" />
       </div>
 
       {/* Summary Cards */}

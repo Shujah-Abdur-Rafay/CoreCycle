@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAdminCourses } from "@/hooks/useAdminCourses";
+import { ResourcesManager } from "@/components/admin/ResourcesManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -24,7 +25,10 @@ const ACCEPTED_TYPES = {
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
   'video/mp4': 'MP4',
   'video/webm': 'WebM',
-  'video/quicktime': 'MOV'
+  'video/quicktime': 'MOV',
+  'text/csv': 'CSV',
+  'application/msword': 'DOC',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
 };
 
 const getFileIcon = (contentType: string | null) => {
@@ -85,7 +89,7 @@ export function CourseEditor() {
 
     const acceptedTypes = Object.keys(ACCEPTED_TYPES);
     if (!acceptedTypes.includes(file.type)) {
-      toast.error("Invalid file type. Please upload PDF, PPT/PPTX, or Video (MP4/WebM/MOV)");
+      toast.error("Invalid file type. Please upload PDF, PPT/PPTX, Video, CSV, DOC, or DOCX");
       return;
     }
 
@@ -262,7 +266,7 @@ export function CourseEditor() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.ppt,.pptx,.mp4,.webm,.mov"
+                  accept=".pdf,.ppt,.pptx,.mp4,.webm,.mov,.csv,.doc,.docx"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
@@ -302,7 +306,7 @@ export function CourseEditor() {
                         <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
                         <p className="mt-2 text-sm font-medium">Click to upload</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          PDF, PPT, PPTX, MP4, WebM, MOV (max 100MB)
+                          PDF, PPT, PPTX, MP4, WebM, MOV, CSV, DOC, DOCX (max 100MB)
                         </p>
                       </>
                     )}
@@ -370,6 +374,17 @@ export function CourseEditor() {
             </Card>
           </div>
         </motion.div>
+
+        {/* Resources Manager — only available after course is created */}
+        {isEditing && courseId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <ResourcesManager courseId={courseId} />
+          </motion.div>
+        )}
 
         {/* Actions */}
         <motion.div

@@ -12,6 +12,8 @@ import { ModuleNavigation } from "@/components/course/ModuleNavigation";
 import { ModuleContent } from "@/components/course/ModuleContent";
 import { QuizComponent } from "@/components/course/QuizComponent";
 import { CourseProgress } from "@/components/course/CourseProgress";
+import { ResourceList } from "@/components/course/ResourceList";
+import { useCourseResources } from "@/hooks/useAdminCourses";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -41,6 +43,7 @@ const CoursePlayer = () => {
     isInstructorModuleComplete
   } = useModules(courseId || '');
   const { createCertificate } = useCertificates();
+  const { resources } = useCourseResources(courseId);
 
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -359,6 +362,18 @@ const CoursePlayer = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* Course Resources */}
+            {resources.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="mt-8 pt-8 border-t border-border"
+              >
+                <ResourceList resources={resources} />
+              </motion.div>
+            )}
           </div>
         </main>
       </div>

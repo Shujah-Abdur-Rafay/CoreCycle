@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useIndustrySectors } from "@/hooks/useIndustrySectors";
 import { toast } from "sonner";
+import { sendWelcomeEmail, sendRegistrationConfirmationEmail } from "@/lib/emailWorkflows";
 import { z } from "zod";
 import { 
   Recycle, 
@@ -147,6 +148,16 @@ const Auth = () => {
           }
         } else {
           toast.success("Account created successfully! Welcome to Corecycle.");
+          // Send welcome + registration confirmation emails
+          const userName = `${formData.firstName} ${formData.lastName}`.trim();
+          sendWelcomeEmail({ email: formData.email, userName }).catch(console.error);
+          sendRegistrationConfirmationEmail({
+            email: formData.email,
+            userName,
+            userType: userType === 'business' ? 'sme_admin' : 'individual',
+            companyName: userType === 'business' ? formData.companyName : undefined,
+            approvalRequired: userType === 'business',
+          }).catch(console.error);
           navigate("/");
         }
       }

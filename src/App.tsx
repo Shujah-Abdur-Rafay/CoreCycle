@@ -22,6 +22,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
+import AIQuizManagement from "./pages/admin/AIQuizManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,7 +35,7 @@ const App = () => (
           <SimulatedUserProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/learn/waste-overview" element={<WasteOverview />} />
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/*" element={<Admin />} />
+                <Route path="/admin/ai-quizzes" element={<AIQuizManagement />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

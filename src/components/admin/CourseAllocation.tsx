@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCourseAllocations } from '@/hooks/useCourseAllocations';
 import { useAdminCourses } from '@/hooks/useAdminCourses';
 import { toast } from 'sonner';
+import { sendCourseAllocationEmail } from '@/lib/emailWorkflows';
 import { Loader2, Plus, Trash2, Users, User, Building2, BookOpen, Search, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -49,6 +50,22 @@ export function CourseAllocation() {
       }
     } else {
       toast.success('Course allocated successfully');
+      // Send email notification if allocating to a user
+      if (allocationType === 'user') {
+        const targetUser = users.find(u => u.user_id === selectedTarget);
+        const course = courses.find(c => c.id === selectedCourse);
+        if (targetUser?.email && course) {
+          sendCourseAllocationEmail({
+            email: targetUser.email,
+            userName: targetUser.full_name || targetUser.email,
+            courseId: course.id,
+            courseTitle: course.title,
+            courseDescription: course.description || undefined,
+            allocatedBy: 'Admin',
+            dueDate: expiresAt || undefined,
+          }).catch(console.error);
+        }
+      }
       setIsDialogOpen(false);
       resetForm();
     }
