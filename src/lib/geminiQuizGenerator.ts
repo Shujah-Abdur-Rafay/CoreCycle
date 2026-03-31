@@ -33,8 +33,16 @@ export async function generateQuizFromText(
     topic = 'the provided content',
   } = options;
 
-  const modelName = import.meta.env.VITE_GEMINI_MODEL || 'gemini-flash-latest';
-  const model = genAI.getGenerativeModel({ model: modelName });
+  // Prioritized list of models to try
+  const MODELS_TO_TRY = [
+    import.meta.env.VITE_GEMINI_MODEL, // 1st priority: user override from .env
+    'gemini-flash-latest',             // 2nd priority: current stable flash
+    'gemini-2.5-flash',                // 3rd priority: 2.5 version
+    'gemini-2.0-flash',                // 4th priority: 2.0 version
+    'gemini-pro-latest',               // 5th priority: try pro model
+  ].filter(Boolean); // removes undefined items
+
+  let lastError: Error | null = null;
 
   const prompt = `You are an expert educational content creator. Generate ${numQuestions} multiple-choice quiz questions based on the following content.
 
@@ -67,44 +75,63 @@ OUTPUT FORMAT (JSON only, no markdown):
 
 Generate the quiz now:`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+  for (const modelName of MODELS_TO_TRY) {
+    try {
+      console.log(`Attempting quiz generation with model: ${modelName}...`);
+      const model = genAI.getGenerativeModel({ model: modelName as string });
+      
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
 
-    // Extract JSON from response (handle markdown code blocks)
-    let jsonText = text.trim();
-    if (jsonText.startsWith('```json')) {
-      jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (jsonText.startsWith('```')) {
-      jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      // Extract JSON from response (handle markdown code blocks)
+      let jsonText = text.trim();
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      const parsed = JSON.parse(jsonText) as QuizGenerationResult;
+
+      // Validate structure
+      if (!parsed.questions || !Array.isArray(parsed.questions)) {
+        throw new Error('Invalid response structure: missing questions array');
+      }
+
+      // Validate each question
+      parsed.questions.forEach((q, idx) => {
+        if (!q.question || !q.options || q.options.length !== 4) {
+          throw new Error(`Invalid question at index ${idx}: must have question text and exactly 4 options`);
+        }
+        if (typeof q.correctAnswerIndex !== 'number' || q.correctAnswerIndex < 0 || q.correctAnswerIndex > 3) {
+          throw new Error(`Invalid question at index ${idx}: correctAnswerIndex must be 0-3`);
+        }
+        if (!q.explanation) {
+          throw new Error(`Invalid question at index ${idx}: missing explanation`);
+        }
+      });
+
+      console.log(`Successfully generated quiz using ${modelName}`);
+      return parsed;
+
+    } catch (error: any) {
+      console.warn(`Model ${modelName} failed:`, error.message);
+      lastError = error;
+      
+      // If error is a quota error that might apply to all models, we could stop, 
+      // but usually different models have different quotas, so we continue.
+      if (error.message?.includes('429') || error.message?.includes('Quota')) {
+        console.warn('Quota limit hit, trying next model in list...');
+      }
+      
+      continue; // try next model
     }
-
-    const parsed = JSON.parse(jsonText) as QuizGenerationResult;
-
-    // Validate structure
-    if (!parsed.questions || !Array.isArray(parsed.questions)) {
-      throw new Error('Invalid response structure: missing questions array');
-    }
-
-    // Validate each question
-    parsed.questions.forEach((q, idx) => {
-      if (!q.question || !q.options || q.options.length !== 4) {
-        throw new Error(`Invalid question at index ${idx}: must have question text and exactly 4 options`);
-      }
-      if (typeof q.correctAnswerIndex !== 'number' || q.correctAnswerIndex < 0 || q.correctAnswerIndex > 3) {
-        throw new Error(`Invalid question at index ${idx}: correctAnswerIndex must be 0-3`);
-      }
-      if (!q.explanation) {
-        throw new Error(`Invalid question at index ${idx}: missing explanation`);
-      }
-    });
-
-    return parsed;
-  } catch (error: any) {
-    console.error('Gemini API error:', error);
-    throw new Error(`Failed to generate quiz: ${error.message}`);
   }
+
+  // If we reach here, all models failed
+  console.error('All Gemini models failed to generate content');
+  throw new Error(`Failed to generate quiz after trying all available models. Last error: ${lastError?.message}`);
 }
 
 /**
