@@ -1,73 +1,80 @@
-# Welcome to your Lovable project
+# Ontario Recycle Mentor
 
-## Project info
+A comprehensive learning management system (LMS) for Ontario's recycling and waste management training.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Getting Started
 
-## How can I edit this code?
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or bun
+- Supabase account
+- Google Gemini API Key (for AI Quiz Generator)
+- Brevo Account (for transactional emails)
 
-There are several ways of editing your application.
+### Installation
 
-**Use Lovable**
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Shujah-Abdur-Rafay/CoreCycle.git
+   cd ontario-recycle-mentor
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   bun install
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+3. **Configure Environment Variables**
+   Create a `.env` file in the root directory and add the following variables (use `.env.example` as a template):
+   ```env
+   # Supabase
+   VITE_SUPABASE_PROJECT_ID="your-project-id"
+   VITE_SUPABASE_URL="https://your-project-id.supabase.co"
+   VITE_SUPABASE_PUBLISHABLE_KEY="your-anon-key"
 
-**Use your preferred IDE**
+   # Email Service (Brevo)
+   VITE_BREVO_API_KEY="your-brevo-api-key"
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+   # AI Services (Google Gemini)
+   VITE_GEMINI_API_KEY="your-gemini-api-key"
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+   # App URL
+   VITE_BASE_URL="http://localhost:8080"
+   ```
 
-Follow these steps:
+4. **Run the development server**
+   ```bash
+   npm run dev
+   # or
+   bun dev
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🛠️ Tech Stack
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **Frontend**: React, TypeScript, Vite
+- **UI Components**: shadcn/ui, Lucide Icons, Tailwind CSS
+- **Backend & Database**: Supabase (PostgreSQL, Auth, Functions)
+- **AI**: Google Gemini Pro (Quiz Generation)
+- **Email**: Brevo (SMTP & Transactional)
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📁 Project Structure
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+- `src/components`: Reusable UI components
+- `src/pages`: Main application views
+- `src/hooks`: Custom React hooks for data and logic
+- `src/lib`: Utility functions and third-party integrations
+- `supabase/migrations`: Database schema and RLS policies
+- `supabase/functions`: Edge Functions for external logic
 
-**Edit a file directly in GitHub**
+## 🔐 Security & Best Practices
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- All sensitive keys are stored in environment variables.
+- Never commit your `.env` file to version control.
+- Row-Level Security (RLS) is enabled for all database tables.
+- Role-based access control (RBAC) manages Admin vs Learner permissions.
 
-**Use GitHub Codespaces**
+## 📄 License
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is proprietary. All rights reserved.

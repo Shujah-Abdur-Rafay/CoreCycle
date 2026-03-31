@@ -29,14 +29,16 @@ This creates:
 - RLS policies
 - Indexes
 
-### 3. Verify API Key
+### 3. Configure API Keys
 
-The Gemini API key is already configured in:
-```
-src/lib/geminiQuizGenerator.ts
-```
+The AI Quiz Generator requires a Google Gemini API key. 
 
-Key: `AIzaSyAzhNrd47kHuD3v2f7ybQJec7IFvw94Tio`
+1. Create a `.env` file in the project root (if not already present).
+2. Add your Gemini API key to `.env`:
+   ```env
+   VITE_GEMINI_API_KEY=your_actual_api_key_here
+   ```
+3. The system will automatically use this key via `import.meta.env.VITE_GEMINI_API_KEY`.
 
 ## Features
 

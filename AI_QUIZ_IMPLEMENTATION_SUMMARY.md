@@ -171,7 +171,7 @@ npm install @google/generative-ai pdfjs-dist mammoth
 
 ### Gemini API Configuration
 - **Model**: `gemini-pro`
-- **API Key**: `AIzaSyAzhNrd47kHuD3v2f7ybQJec7IFvw94Tio`
+- **API Key**: Configured via `VITE_GEMINI_API_KEY` in your `.env` file.
 - **Max Content**: 15,000 characters per request
 
 ### Prompt Engineering
