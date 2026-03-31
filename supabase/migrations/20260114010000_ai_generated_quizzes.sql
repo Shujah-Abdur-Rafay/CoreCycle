@@ -29,53 +29,48 @@ create table if not exists public.ai_quiz_questions (
 );
 
 -- Indexes
-create index if not exists ai_generated_quizzes_generated_by_idx 
-  on public.ai_generated_quizzes(generated_by);
-create index if not exists ai_generated_quizzes_module_id_idx 
-  on public.ai_generated_quizzes(module_id);
-create index if not exists ai_generated_quizzes_course_id_idx 
-  on public.ai_generated_quizzes(course_id);
-create index if not exists ai_quiz_questions_quiz_id_idx 
-  on public.ai_quiz_questions(quiz_id);
+create index if not exists ai_generated_quizzes_generated_by_idx on public.ai_generated_quizzes(generated_by);
+create index if not exists ai_generated_quizzes_module_id_idx on public.ai_generated_quizzes(module_id);
+create index if not exists ai_generated_quizzes_course_id_idx on public.ai_generated_quizzes(course_id);
+create index if not exists ai_quiz_questions_quiz_id_idx on public.ai_quiz_questions(quiz_id);
 
 -- RLS
 alter table public.ai_generated_quizzes enable row level security;
 alter table public.ai_quiz_questions enable row level security;
 
--- Super admins can do everything
-create policy "super_admin_all_ai_quizzes"
+-- Admin policies (supports all admin roles)
+drop policy if exists "super_admin_all_ai_quizzes" on public.ai_generated_quizzes;
+create policy "admins_manage_ai_quizzes"
   on public.ai_generated_quizzes
   for all
   using (
     exists (
       select 1 from public.user_roles
-      where user_id = auth.uid() and role = 'super_admin'
+      where user_id = auth.uid() 
+      and role in ('super_admin', 'producer_admin', 'municipality_admin', 'sme_admin')
     )
   );
 
-create policy "super_admin_all_ai_quiz_questions"
+drop policy if exists "super_admin_all_ai_quiz_questions" on public.ai_quiz_questions;
+create policy "admins_manage_ai_questions"
   on public.ai_quiz_questions
   for all
   using (
     exists (
       select 1 from public.user_roles
-      where user_id = auth.uid() and role = 'super_admin'
+      where user_id = auth.uid() 
+      and role in ('super_admin', 'producer_admin', 'municipality_admin', 'sme_admin')
     )
   );
 
--- Users can read published quizzes they have access to
+-- Learners/authenticated users can read published quizzes
 create policy "users_read_published_ai_quizzes"
   on public.ai_generated_quizzes
   for select
   using (
     is_published = true
-    and (
-      course_id is null
-      or public.user_has_course_access(course_id, auth.uid())
-    )
   );
 
--- Users can read questions from published quizzes
 create policy "users_read_published_ai_quiz_questions"
   on public.ai_quiz_questions
   for select
@@ -84,10 +79,6 @@ create policy "users_read_published_ai_quiz_questions"
       select 1 from public.ai_generated_quizzes
       where id = quiz_id
         and is_published = true
-        and (
-          course_id is null
-          or public.user_has_course_access(course_id, auth.uid())
-        )
     )
   );
 
