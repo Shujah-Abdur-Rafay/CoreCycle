@@ -28,3 +28,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary files
+tmp/
+*.tmp
+test_models.js
+models_output.txt
+all_models.json
