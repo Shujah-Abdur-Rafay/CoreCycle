@@ -156,7 +156,7 @@ created_at            timestamptz
 
 ### Gemini AI Prompt Structure
 
-The system sends a structured prompt to Gemini (defaults to `gemini-1.5-flash`):
+The system sends a structured prompt to Gemini (defaults to `gemini-2.0-flash`):
 - Content excerpt (max 15,000 chars)
 - Number of questions requested
 - Difficulty level
