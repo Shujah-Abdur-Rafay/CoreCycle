@@ -33,7 +33,8 @@ export async function generateQuizFromText(
     topic = 'the provided content',
   } = options;
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  const modelName = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
+  const model = genAI.getGenerativeModel({ model: modelName });
 
   const prompt = `You are an expert educational content creator. Generate ${numQuestions} multiple-choice quiz questions based on the following content.
 

@@ -40,6 +40,13 @@ The AI Quiz Generator requires a Google Gemini API key.
    ```
 3. The system will automatically use this key via `import.meta.env.VITE_GEMINI_API_KEY`.
 
+### 4. Configure Gemini Model (Optional)
+
+By default, the system uses `gemini-1.5-flash`. You can override this in `.env`:
+```env
+VITE_GEMINI_MODEL=gemini-1.5-pro
+```
+
 ## Features
 
 ### For Admins
@@ -149,7 +156,7 @@ created_at            timestamptz
 
 ### Gemini AI Prompt Structure
 
-The system sends a structured prompt to Gemini Pro:
+The system sends a structured prompt to Gemini (defaults to `gemini-1.5-flash`):
 - Content excerpt (max 15,000 chars)
 - Number of questions requested
 - Difficulty level
