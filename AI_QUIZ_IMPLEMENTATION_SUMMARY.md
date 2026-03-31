@@ -170,8 +170,8 @@ npm install @google/generative-ai pdfjs-dist mammoth
 ## 🤖 AI Integration
 
 ### Gemini API Configuration
-- **Model**: `gemini-2.0-flash` (recommended) or `gemini-2.5-flash`
-- **Model Config**: Can be overridden via `VITE_GEMINI_MODEL` in `.env` (defaults to `gemini-2.0-flash`)
+- **Model**: `gemini-flash-latest` (recommended for free tier) or `gemini-pro-latest`
+- **Model Config**: Can be overridden via `VITE_GEMINI_MODEL` in `.env` (defaults to `gemini-flash-latest`)
 - **API Key**: Configured via `VITE_GEMINI_API_KEY` in your `.env` file.
 - **Max Content**: 15,000 characters per request
 
@@ -267,7 +267,7 @@ Structured prompt includes:
 ## 🎯 Key Features
 
 ✅ **AI-Powered Generation**
-- Uses Google Gemini 2.0 Flash (default)
+- Uses Google Gemini Flash (Latest) for better free tier support
 - Structured prompts
 - Quality validation
 
