@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { UserManagement } from "@/components/admin/UserManagement";
+import { BulkUserUpload } from "@/components/admin/BulkUserUpload";
 import { ReportGenerator } from "@/components/admin/ReportGenerator";
 import { AdminStats } from "@/components/admin/AdminStats";
 import { RoleSwitcher } from "@/components/admin/RoleSwitcher";
@@ -15,7 +16,7 @@ import { CourseAllocation } from "@/components/admin/CourseAllocation";
 import { SMEManagement } from "@/components/admin/SMEManagement";
 import { SMEReports } from "@/components/admin/SMEReports";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Users, FileText, BookMarked, BarChart3 } from "lucide-react";
+import { Loader2, Users, FileText, BookMarked, BarChart3, Upload } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -117,7 +118,24 @@ const Admin = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <h1 className="text-3xl font-display font-bold text-foreground">User Management</h1>
           </motion.div>
-          <UserManagement />
+          <Tabs defaultValue="users">
+            <TabsList className="mb-6">
+              <TabsTrigger value="users" className="gap-2">
+                <Users className="h-4 w-4" />
+                All Users
+              </TabsTrigger>
+              <TabsTrigger value="bulk" className="gap-2">
+                <Upload className="h-4 w-4" />
+                Bulk Upload
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="users">
+              <UserManagement />
+            </TabsContent>
+            <TabsContent value="bulk">
+              <BulkUserUpload />
+            </TabsContent>
+          </Tabs>
         </div>
       </AdminLayout>
     );

@@ -3,11 +3,13 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useCourses, Course } from "@/hooks/useCourses";
 import { useEnrollments } from "@/hooks/useEnrollments";
 import { useModules } from "@/hooks/useModules";
 import { useCertificates } from "@/hooks/useCertificates";
+import { useAIQuizzes, AIQuizWithQuestions } from "@/hooks/useAIQuizzes";
 import { ModuleNavigation } from "@/components/course/ModuleNavigation";
 import { ModuleContent } from "@/components/course/ModuleContent";
 import { QuizComponent } from "@/components/course/QuizComponent";
@@ -22,6 +24,8 @@ import {
   X,
   Award,
   Home,
+  CheckCircle2,
+  ChevronRight,
 } from "lucide-react";
 
 const CoursePlayer = () => {
@@ -30,9 +34,9 @@ const CoursePlayer = () => {
   const { user, loading: authLoading } = useAuth();
   const { courses, loading: coursesLoading } = useCourses();
   const { enrollments, loading: enrollmentsLoading } = useEnrollments();
-  const { 
-    modules, 
-    completions, 
+  const {
+    modules,
+    completions,
     loading: modulesLoading,
     fetchCompletions,
     startModule,
@@ -44,9 +48,13 @@ const CoursePlayer = () => {
   } = useModules(courseId || '');
   const { createCertificate } = useCertificates();
   const { resources } = useCourseResources(courseId);
+  const { getQuizWithQuestions } = useAIQuizzes();
 
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showFinalQuiz, setShowFinalQuiz] = useState(false);
+  const [finalQuizData, setFinalQuizData] = useState<AIQuizWithQuestions | null>(null);
+  const [finalQuizScore, setFinalQuizScore] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<any>(null);
@@ -218,6 +226,23 @@ const CoursePlayer = () => {
 
     // Create certificate
     await createCertificate(enrollment.id, course.id, course.title);
+
+    // If the course has a final quiz, load and show it
+    if (course.final_quiz_id) {
+      try {
+        const quizData = await getQuizWithQuestions(course.final_quiz_id);
+        setFinalQuizData(quizData);
+        setShowFinalQuiz(true);
+      } catch (err) {
+        console.error('Failed to load final quiz:', err);
+      }
+    }
+  };
+
+  const handleFinalQuizComplete = (score: number) => {
+    setFinalQuizScore(score);
+    setShowFinalQuiz(false);
+    toast.success(`Final quiz complete! You scored ${score}%.`);
   };
 
   const currentModule = modules.find(m => m.id === currentModuleId);
@@ -326,12 +351,19 @@ const CoursePlayer = () => {
         <main className="flex-1 min-h-[calc(100vh-4rem)]">
           <div className="p-4 lg:p-8 max-w-4xl mx-auto">
             <motion.div
-              key={currentModuleId}
+              key={showFinalQuiz ? 'final-quiz' : currentModuleId}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              {showQuiz && currentModule ? (
+              {/* ── Final quiz overlay ── */}
+              {showFinalQuiz && finalQuizData ? (
+                <FinalQuizPanel
+                  quiz={finalQuizData}
+                  onComplete={handleFinalQuizComplete}
+                  onSkip={() => setShowFinalQuiz(false)}
+                />
+              ) : showQuiz && currentModule ? (
                 <QuizComponent
                   moduleId={currentModule.id}
                   moduleTitle={currentModule.title}
@@ -346,7 +378,7 @@ const CoursePlayer = () => {
                   status={getModuleStatus(currentModule.id)}
                   onComplete={handleModuleComplete}
                   onStartQuiz={currentModule.has_quiz ? () => setShowQuiz(true) : undefined}
-                  onConfirmAttendance={currentModule.requires_instructor_approval 
+                  onConfirmAttendance={currentModule.requires_instructor_approval
                     ? (name: string) => confirmInstructorAttendance(currentModule.id, name)
                     : undefined}
                   onApproveInstructorModule={currentModule.requires_instructor_approval
@@ -362,6 +394,67 @@ const CoursePlayer = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* Final quiz score summary (after completion) */}
+            {finalQuizScore !== null && isComplete && !showFinalQuiz && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-4 rounded-xl border bg-primary/5 border-primary/20 flex items-center gap-3"
+              >
+                <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Final Quiz Complete
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    You scored <strong>{finalQuizScore}%</strong> on the final quiz.
+                  </p>
+                </div>
+                {course?.final_quiz_id && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => setShowFinalQuiz(true)}
+                  >
+                    Retake
+                  </Button>
+                )}
+              </motion.div>
+            )}
+
+            {/* Prompt to take final quiz when course is complete but quiz not yet attempted */}
+            {isComplete && course?.final_quiz_id && finalQuizScore === null && !showFinalQuiz && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 p-4 rounded-xl border bg-amber-500/5 border-amber-500/20 flex items-center gap-3"
+              >
+                <Award className="h-5 w-5 text-amber-500 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    Final Quiz Available
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Complete the course final quiz to test your knowledge.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    if (course?.final_quiz_id) {
+                      const data = await getQuizWithQuestions(course.final_quiz_id);
+                      setFinalQuizData(data);
+                      setShowFinalQuiz(true);
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  Start <ChevronRight className="h-3 w-3" />
+                </Button>
+              </motion.div>
+            )}
 
             {/* Course Resources */}
             {resources.length > 0 && (
@@ -380,5 +473,127 @@ const CoursePlayer = () => {
     </div>
   );
 };
+
+// ─── Inline Final Quiz Panel ────────────────────────────────────────────────
+
+interface FinalQuizPanelProps {
+  quiz: AIQuizWithQuestions;
+  onComplete: (score: number) => void;
+  onSkip: () => void;
+}
+
+function FinalQuizPanel({ quiz, onComplete, onSkip }: FinalQuizPanelProps) {
+  const [answers, setAnswers] = useState<(number | null)[]>(
+    Array(quiz.questions.length).fill(null)
+  );
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+
+  const handleSelect = (qIdx: number, aIdx: number) => {
+    if (submitted) return;
+    setAnswers(prev => {
+      const next = [...prev];
+      next[qIdx] = aIdx;
+      return next;
+    });
+  };
+
+  const handleSubmit = () => {
+    const correct = quiz.questions.filter(
+      (q, i) => answers[i] === q.correct_answer_index
+    ).length;
+    const pct = Math.round((correct / quiz.questions.length) * 100);
+    setScore(pct);
+    setSubmitted(true);
+  };
+
+  if (submitted) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8 space-y-3">
+          <div className="text-6xl font-bold text-primary">{score}%</div>
+          <p className="text-xl font-semibold text-foreground">
+            {score >= 70 ? 'Excellent work!' : 'Keep practising!'}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {quiz.questions.filter((q, i) => answers[i] === q.correct_answer_index).length} of {quiz.questions.length} correct
+          </p>
+          <Button onClick={() => onComplete(score)} className="gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            Done
+          </Button>
+        </div>
+        {quiz.questions.map((q, i) => (
+          <div key={q.id} className="border rounded-xl p-4 space-y-2">
+            <p className="text-sm font-medium">{i + 1}. {q.question}</p>
+            {q.options.map((opt, oi) => {
+              const isSelected = answers[i] === oi;
+              const isCorrect = oi === q.correct_answer_index;
+              return (
+                <div
+                  key={oi}
+                  className={`text-sm px-3 py-2 rounded-lg ${
+                    isCorrect ? 'bg-green-500/10 text-green-700 border border-green-500/30' :
+                    isSelected ? 'bg-red-500/10 text-red-700 border border-red-500/30' :
+                    'bg-muted/30'
+                  }`}
+                >
+                  {opt}
+                </div>
+              );
+            })}
+            <p className="text-xs text-muted-foreground italic">{q.explanation}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">{quiz.title}</h2>
+          <p className="text-sm text-muted-foreground">{quiz.description}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="capitalize">{quiz.difficulty}</Badge>
+          <Button variant="ghost" size="sm" onClick={onSkip}>Skip</Button>
+        </div>
+      </div>
+
+      {quiz.questions.map((q, i) => (
+        <div key={q.id} className="border rounded-xl p-4 space-y-3">
+          <p className="text-sm font-medium">{i + 1}. {q.question}</p>
+          <div className="space-y-2">
+            {q.options.map((opt, oi) => (
+              <button
+                key={oi}
+                type="button"
+                onClick={() => handleSelect(i, oi)}
+                className={`w-full text-left text-sm px-3 py-2.5 rounded-lg border-2 transition-all ${
+                  answers[i] === oi
+                    ? 'border-primary bg-primary/5 text-foreground'
+                    : 'border-border hover:border-primary/40 hover:bg-muted/30'
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <Button
+        onClick={handleSubmit}
+        disabled={answers.some(a => a === null)}
+        className="w-full gap-2"
+      >
+        Submit Final Quiz
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
 export default CoursePlayer;

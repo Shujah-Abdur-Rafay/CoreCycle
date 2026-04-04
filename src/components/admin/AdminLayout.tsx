@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
+import {
   Recycle,
   LayoutDashboard,
   Users,
@@ -36,18 +36,20 @@ import {
   ChevronDown,
   Shield,
   Eye,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const menuItems = [
-  { title: "Overview", url: "/admin", icon: LayoutDashboard },
-  { title: "User Management", url: "/admin/users", icon: Users },
-  { title: "SME Management", url: "/admin/smes", icon: Building2 },
-  { title: "Courses", url: "/admin/courses", icon: GraduationCap },
-  { title: "AI Quiz Generator", url: "/admin/ai-quizzes", icon: Sparkles },
-  { title: "Reports", url: "/admin/reports", icon: FileText },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
+  { title: "Overview",          url: "/admin",              icon: LayoutDashboard },
+  { title: "User Management",   url: "/admin/users",        icon: Users },
+  { title: "SME Management",    url: "/admin/smes",         icon: Building2 },
+  { title: "Courses",           url: "/admin/courses",      icon: GraduationCap },
+  { title: "AI Quiz Generator", url: "/admin/ai-quizzes",   icon: Sparkles },
+  { title: "Compliance",        url: "/admin/compliance",   icon: ShieldCheck },
+  { title: "Reports",           url: "/admin/reports",      icon: FileText },
+  { title: "Settings",          url: "/admin/settings",     icon: Settings },
 ];
 
 function AdminSidebar() {

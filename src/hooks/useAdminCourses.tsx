@@ -12,6 +12,8 @@ export interface CourseResource {
   created_at: string;
 }
 
+export type CourseAccessType = 'public' | 'private' | 'allocated_only';
+
 export interface AdminCourse {
   id: string;
   title: string;
@@ -22,6 +24,8 @@ export interface AdminCourse {
   content_type: string | null;
   duration_minutes: number;
   is_published: boolean;
+  access_type: CourseAccessType;
+  final_quiz_id: string | null;
   created_at: string;
   updated_at: string;
   module_count?: number;
@@ -121,8 +125,10 @@ export function useAdminCourses() {
         content_url: courseData.content_url,
         content_type: courseData.content_type,
         duration_minutes: courseData.duration_minutes || 0,
-        is_published: courseData.is_published || false
-      })
+        is_published: courseData.is_published || false,
+        access_type: courseData.access_type || 'public',
+        final_quiz_id: courseData.final_quiz_id || null,
+      } as any)
       .select()
       .single();
 
@@ -142,8 +148,10 @@ export function useAdminCourses() {
         content_url: courseData.content_url,
         content_type: courseData.content_type,
         duration_minutes: courseData.duration_minutes,
-        is_published: courseData.is_published
-      })
+        is_published: courseData.is_published,
+        access_type: courseData.access_type,
+        final_quiz_id: courseData.final_quiz_id,
+      } as any)
       .eq('id', courseId)
       .select()
       .single();

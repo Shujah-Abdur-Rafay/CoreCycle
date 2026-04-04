@@ -50,6 +50,13 @@ const Dashboard = () => {
     }
   }, [user, authLoading, navigate]);
 
+  // SME admins have their own dedicated dashboard
+  useEffect(() => {
+    if (!roleLoading && userRole?.role === 'sme_admin' && !simulatedRole) {
+      navigate("/sme-dashboard", { replace: true });
+    }
+  }, [userRole, roleLoading, simulatedRole, navigate]);
+
   if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

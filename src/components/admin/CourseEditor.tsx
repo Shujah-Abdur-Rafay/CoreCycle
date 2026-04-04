@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Loader2, ImageIcon, Upload, FileText, Video, File, X } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ImageIcon, Upload, FileText, Video, File, X, Lock, Globe, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAdminCourses } from "@/hooks/useAdminCourses";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAdminCourses, CourseAccessType } from "@/hooks/useAdminCourses";
+import { useAIQuizzes } from "@/hooks/useAIQuizzes";
 import { ResourcesManager } from "@/components/admin/ResourcesManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -45,13 +53,20 @@ const getFileTypeLabel = (contentType: string | null) => {
   return ACCEPTED_TYPES[contentType as keyof typeof ACCEPTED_TYPES] || contentType.split('/')[1]?.toUpperCase() || 'File';
 };
 
+const ACCESS_TYPE_OPTIONS: { value: CourseAccessType; label: string; description: string; icon: React.ElementType }[] = [
+  { value: 'public', label: 'Public', description: 'Visible to all approved users', icon: Globe },
+  { value: 'private', label: 'Private', description: 'Hidden unless explicitly allocated', icon: Lock },
+  { value: 'allocated_only', label: 'Allocated Only', description: 'Visible only to allocated users/SMEs', icon: Users },
+];
+
 export function CourseEditor() {
   const navigate = useNavigate();
   const { courseId } = useParams();
   const isEditing = Boolean(courseId);
   const { courses, createCourse, updateCourse } = useAdminCourses();
+  const { quizzes: allQuizzes, loading: quizzesLoading } = useAIQuizzes();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -62,7 +77,9 @@ export function CourseEditor() {
     duration_minutes: 0,
     is_published: false,
     content_url: "",
-    content_type: ""
+    content_type: "",
+    access_type: 'public' as CourseAccessType,
+    final_quiz_id: null as string | null,
   });
 
   useEffect(() => {
@@ -77,7 +94,9 @@ export function CourseEditor() {
           duration_minutes: course.duration_minutes,
           is_published: course.is_published,
           content_url: course.content_url || "",
-          content_type: course.content_type || ""
+          content_type: course.content_type || "",
+          access_type: course.access_type ?? 'public',
+          final_quiz_id: course.final_quiz_id ?? null,
         });
       }
     }
@@ -370,6 +389,69 @@ export function CourseEditor() {
                     onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Access Type */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Access Type</CardTitle>
+                <CardDescription>
+                  Who can see this course
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {ACCESS_TYPE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, access_type: opt.value })}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+                      formData.access_type === opt.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/40 hover:bg-muted/30'
+                    }`}
+                  >
+                    <opt.icon className={`h-4 w-4 shrink-0 ${
+                      formData.access_type === opt.value ? 'text-primary' : 'text-muted-foreground'
+                    }`} />
+                    <div>
+                      <p className="text-sm font-medium">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground">{opt.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Final Quiz */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Final Quiz</CardTitle>
+                <CardDescription>
+                  Shown after all modules are completed
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select
+                  value={formData.final_quiz_id ?? 'none'}
+                  onValueChange={(v) => setFormData({ ...formData, final_quiz_id: v === 'none' ? null : v })}
+                  disabled={quizzesLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No final quiz" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No final quiz</SelectItem>
+                    {allQuizzes
+                      .filter(q => q.is_published)
+                      .map(q => (
+                        <SelectItem key={q.id} value={q.id}>
+                          {q.title} ({q.num_questions}q · {q.difficulty})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </CardContent>
             </Card>
           </div>

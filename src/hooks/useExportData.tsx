@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toCsvString, downloadCsv, safeFilename, fmtDate, fmtMinutes, CsvRow } from '@/lib/exportCsv';
+import { exportReportAsPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -522,10 +523,29 @@ export async function exportMyProgress(userId: string): Promise<void> {
   downloadCsv(csv, `My_Training_Progress_${format(new Date(), 'yyyy-MM-dd')}`);
 }
 
+// ─── Shared row fetcher ───────────────────────────────────────────────────────
+
+async function fetchRows(
+  type: ExportType,
+  dateFrom?: string,
+  dateTo?: string
+): Promise<CsvRow[]> {
+  switch (type) {
+    case 'user_progress':    return fetchUserProgressRows(dateFrom, dateTo);
+    case 'training_summary': return fetchTrainingSummaryRows(dateFrom, dateTo);
+    case 'quiz_results':     return fetchQuizResultRows(dateFrom, dateTo);
+    case 'certificate_audit':return fetchCertificateRows(dateFrom, dateTo);
+    case 'user_activity':    return fetchUserActivityRows();
+    case 'compliance':       return fetchComplianceRows();
+    case 'sme_report':       return fetchSmeReportRows();
+  }
+}
+
 // ─── Main hook ────────────────────────────────────────────────────────────────
 
 export function useExportData() {
   const [exporting, setExporting] = useState<ExportType | null>(null);
+  const [exportingPdf, setExportingPdf] = useState<ExportType | null>(null);
 
   const exportCsv = async (
     type: ExportType,
@@ -533,31 +553,7 @@ export function useExportData() {
   ) => {
     setExporting(type);
     try {
-      let rows: CsvRow[] = [];
-
-      switch (type) {
-        case 'user_progress':
-          rows = await fetchUserProgressRows(options.dateFrom, options.dateTo);
-          break;
-        case 'training_summary':
-          rows = await fetchTrainingSummaryRows(options.dateFrom, options.dateTo);
-          break;
-        case 'quiz_results':
-          rows = await fetchQuizResultRows(options.dateFrom, options.dateTo);
-          break;
-        case 'certificate_audit':
-          rows = await fetchCertificateRows(options.dateFrom, options.dateTo);
-          break;
-        case 'user_activity':
-          rows = await fetchUserActivityRows();
-          break;
-        case 'compliance':
-          rows = await fetchComplianceRows();
-          break;
-        case 'sme_report':
-          rows = await fetchSmeReportRows();
-          break;
-      }
+      const rows = await fetchRows(type, options.dateFrom, options.dateTo);
 
       if (rows.length === 0) {
         toast.info('No data found for the selected filters.');
@@ -577,5 +573,29 @@ export function useExportData() {
     }
   };
 
-  return { exportCsv, exporting };
+  const exportPdf = async (
+    type: ExportType,
+    options: { dateFrom?: string; dateTo?: string; label?: string } = {}
+  ) => {
+    setExportingPdf(type);
+    try {
+      const rows = await fetchRows(type, options.dateFrom, options.dateTo);
+
+      if (rows.length === 0) {
+        toast.info('No data found for the selected filters.');
+        return;
+      }
+
+      const label = options.label ?? type;
+      exportReportAsPdf(COLUMNS[type], rows, label);
+      toast.success(`PDF exported — ${rows.length} rows.`);
+    } catch (err: any) {
+      console.error('PDF export error:', err);
+      toast.error(err.message ?? 'PDF export failed');
+    } finally {
+      setExportingPdf(null);
+    }
+  };
+
+  return { exportCsv, exportPdf, exporting, exportingPdf };
 }

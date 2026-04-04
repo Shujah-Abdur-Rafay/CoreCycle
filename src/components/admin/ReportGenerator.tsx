@@ -15,6 +15,7 @@ import {
   BarChart3,
   BookOpen,
   ClipboardList,
+  FileDown,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -87,20 +88,21 @@ const REPORTS: ReportDef[] = [
 ];
 
 export function ReportGenerator() {
-  const { exportCsv, exporting } = useExportData();
+  const { exportCsv, exportPdf, exporting, exportingPdf } = useExportData();
   const [selected, setSelected] = useState<ExportType>("user_progress");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const report = REPORTS.find(r => r.type === selected)!;
-
-  const handleExport = () => {
-    exportCsv(selected, {
-      dateFrom: dateFrom || undefined,
-      dateTo:   dateTo   || undefined,
-      label:    report.label,
-    });
+  const exportOptions = {
+    dateFrom: dateFrom || undefined,
+    dateTo:   dateTo   || undefined,
+    label:    report.label,
   };
+  const isBusy = !!exporting || !!exportingPdf;
+
+  const handleExportCsv = () => exportCsv(selected, exportOptions);
+  const handleExportPdf = () => exportPdf(selected, exportOptions);
 
   return (
     <div className="space-y-6">
@@ -190,18 +192,33 @@ export function ReportGenerator() {
               </div>
             )}
 
-            <Button
-              onClick={handleExport}
-              disabled={!!exporting}
-              className="gap-2"
-            >
-              {exporting === selected ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {exporting === selected ? "Exporting…" : `Export "${report.label}" as CSV`}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onClick={handleExportCsv}
+                disabled={isBusy}
+                variant="outline"
+                className="gap-2"
+              >
+                {exporting === selected ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {exporting === selected ? "Exporting…" : "Export as CSV"}
+              </Button>
+              <Button
+                onClick={handleExportPdf}
+                disabled={isBusy}
+                className="gap-2"
+              >
+                {exportingPdf === selected ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4" />
+                )}
+                {exportingPdf === selected ? "Generating PDF…" : "Export as PDF"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
