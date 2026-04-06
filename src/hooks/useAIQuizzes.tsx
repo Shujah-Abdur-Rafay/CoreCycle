@@ -34,6 +34,17 @@ export interface AIQuizWithQuestions extends AIGeneratedQuiz {
   questions: AIQuizQuestion[];
 }
 
+export interface QuizAttempt {
+  id: string;
+  quiz_id: string;
+  user_id: string;
+  course_id: string | null;
+  score: number;
+  passed: boolean;
+  answers: (number | null)[];
+  completed_at: string;
+}
+
 export function useAIQuizzes(courseId?: string) {
   const { user } = useAuth();
   const [quizzes, setQuizzes] = useState<AIGeneratedQuiz[]>([]);
@@ -155,6 +166,40 @@ export function useAIQuizzes(courseId?: string) {
     await updateQuiz(quizId, { module_id: moduleId });
   };
 
+  const saveQuizAttempt = async (
+    quizId: string,
+    linkedCourseId: string | null,
+    score: number,
+    passed: boolean,
+    answers: (number | null)[]
+  ): Promise<void> => {
+    if (!user) throw new Error('Must be logged in');
+
+    const { error: insertError } = await (supabase as any)
+      .from('quiz_attempts')
+      .insert({
+        quiz_id: quizId,
+        user_id: user.id,
+        course_id: linkedCourseId,
+        score,
+        passed,
+        answers,
+      });
+
+    if (insertError) throw insertError;
+  };
+
+  const getQuizAttempts = async (quizId: string): Promise<QuizAttempt[]> => {
+    const { data, error: fetchError } = await (supabase as any)
+      .from('quiz_attempts')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .order('completed_at', { ascending: false });
+
+    if (fetchError) throw fetchError;
+    return (data || []) as QuizAttempt[];
+  };
+
   useEffect(() => {
     fetchQuizzes();
   }, [courseId]);
@@ -169,6 +214,8 @@ export function useAIQuizzes(courseId?: string) {
     deleteQuiz,
     publishQuiz,
     attachToModule,
+    saveQuizAttempt,
+    getQuizAttempts,
     refetch: fetchQuizzes,
   };
 }

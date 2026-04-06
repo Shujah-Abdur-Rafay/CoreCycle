@@ -1,17 +1,19 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useEnrollments } from "@/hooks/useEnrollments";
+import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
-import { ExportButton } from "@/components/admin/ExportButton";
+import { ExportButton, ExportButtonGroup } from "@/components/admin/ExportButton";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { exportMyProgress } from "@/hooks/useExportData";
+import { exportMyProgress, exportMyProgressAsPdf } from "@/hooks/useExportData";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import {
   BarChart3,
   Loader2,
@@ -20,9 +22,20 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  FileText,
   BookOpen,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
+
+interface AIQuizAttemptRow {
+  id: string;
+  score: number;
+  passed: boolean;
+  completed_at: string;
+  quiz: { title: string; difficulty: string } | null;
+  profile: { full_name: string; email: string } | null;
+}
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -30,12 +43,39 @@ const Reports = () => {
   const { isSmeAdmin, isProducerAdmin, isSuperAdmin, isMunicipalityAdmin } = useUserRole();
   const { enrollments, loading: enrollLoading } = useEnrollments();
   const [exportingPersonal, setExportingPersonal] = useState(false);
+  const [exportingPersonalPdf, setExportingPersonalPdf] = useState(false);
+  const [aiQuizAttempts, setAiQuizAttempts] = useState<AIQuizAttemptRow[]>([]);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
 
   const isManagement = isSmeAdmin || isProducerAdmin || isSuperAdmin || isMunicipalityAdmin;
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth?mode=login");
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (!isManagement) return;
+    const fetchAttempts = async () => {
+      setAttemptsLoading(true);
+      try {
+        const { data } = await (supabase as any)
+          .from('quiz_attempts')
+          .select(`
+            id, score, passed, completed_at,
+            quiz:ai_generated_quizzes(title, difficulty),
+            profile:profiles!quiz_attempts_user_id_fkey(full_name, email)
+          `)
+          .order('completed_at', { ascending: false })
+          .limit(50);
+        setAiQuizAttempts((data || []) as AIQuizAttemptRow[]);
+      } catch {
+        // silently ignore — table may not exist yet
+      } finally {
+        setAttemptsLoading(false);
+      }
+    };
+    fetchAttempts();
+  }, [isManagement]);
 
   if (authLoading) {
     return (
@@ -64,6 +104,18 @@ const Reports = () => {
       toast.error(err.message ?? "Export failed");
     } finally {
       setExportingPersonal(false);
+    }
+  };
+
+  const handlePersonalExportPdf = async () => {
+    setExportingPersonalPdf(true);
+    try {
+      await exportMyProgressAsPdf(user.id);
+      toast.success("Your progress exported as PDF");
+    } catch (err: any) {
+      toast.error(err.message ?? "Export failed");
+    } finally {
+      setExportingPersonalPdf(false);
     }
   };
 
@@ -96,20 +148,36 @@ const Reports = () => {
           </div>
 
           {/* Personal export — always visible */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            disabled={exportingPersonal || enrollLoading}
-            onClick={handlePersonalExport}
-          >
-            {exportingPersonal ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            {exportingPersonal ? "Exporting…" : "Export My Progress"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={exportingPersonal || enrollLoading}
+              onClick={handlePersonalExport}
+            >
+              {exportingPersonal ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {exportingPersonal ? "Exporting…" : "Progress CSV"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={exportingPersonalPdf || enrollLoading}
+              onClick={handlePersonalExportPdf}
+            >
+              {exportingPersonalPdf ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              {exportingPersonalPdf ? "Exporting…" : "Progress PDF"}
+            </Button>
+          </div>
         </motion.div>
 
         {/* ── Learner stats (always shown) ─────────────────────────────────── */}
@@ -227,7 +295,7 @@ const Reports = () => {
               <CardHeader>
                 <CardTitle>Organisation Exports</CardTitle>
                 <CardDescription>
-                  Download CSV reports for your organisation's training data
+                  Download CSV or PDF reports for your organisation's training data
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -248,10 +316,17 @@ const Reports = () => {
                   />
                   <ExportCard
                     icon={Award}
-                    title="Quiz Results"
-                    description="All quiz scores with pass/fail status"
+                    title="Module Quiz Results"
+                    description="Module-level quiz scores with pass/fail status"
                     exportType="quiz_results"
-                    label="Quiz Results"
+                    label="Module Quiz Results"
+                  />
+                  <ExportCard
+                    icon={Sparkles}
+                    title="AI Quiz Results"
+                    description="AI-generated quiz attempt scores and pass/fail"
+                    exportType="ai_quiz_results"
+                    label="AI Quiz Results"
                   />
                   <ExportCard
                     icon={Award}
@@ -279,6 +354,88 @@ const Reports = () => {
                     />
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* ── AI Quiz Results table (admin) ────────────────────────────── */}
+        {isManagement && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-500" />
+                    AI Quiz Attempts
+                  </CardTitle>
+                  <CardDescription>Recent AI-generated quiz attempts by learners</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {attemptsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : aiQuizAttempts.length === 0 ? (
+                  <p className="text-center text-muted-foreground text-sm py-8">
+                    No quiz attempts yet. Learners will appear here once they take AI-generated quizzes.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground">
+                          <th className="text-left py-2 pr-4 font-medium">Quiz</th>
+                          <th className="text-left py-2 pr-4 font-medium">Learner</th>
+                          <th className="text-left py-2 pr-4 font-medium">Score</th>
+                          <th className="text-left py-2 pr-4 font-medium">Status</th>
+                          <th className="text-left py-2 font-medium">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {aiQuizAttempts.map(a => (
+                          <tr key={a.id} className="border-b last:border-0">
+                            <td className="py-3 pr-4">
+                              <p className="font-medium text-foreground line-clamp-1">
+                                {a.quiz?.title ?? '—'}
+                              </p>
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {a.quiz?.difficulty}
+                              </p>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <p className="text-foreground">{a.profile?.full_name ?? '—'}</p>
+                              <p className="text-xs text-muted-foreground">{a.profile?.email ?? ''}</p>
+                            </td>
+                            <td className="py-3 pr-4 font-semibold text-foreground">
+                              {a.score}%
+                            </td>
+                            <td className="py-3 pr-4">
+                              <Badge
+                                variant="outline"
+                                className={a.passed
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-red-50 text-red-700 border-red-200'}
+                              >
+                                {a.passed ? 'Passed' : 'Failed'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 text-muted-foreground text-xs">
+                              {a.completed_at
+                                ? format(new Date(a.completed_at), 'MMM d, yyyy')
+                                : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -332,7 +489,10 @@ function ExportCard({
           <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
         </div>
       </div>
-      <ExportButton type={exportType} label={label} className="w-full justify-center" />
+      <div className="flex gap-2">
+        <ExportButton type={exportType} label="CSV" format="csv" className="flex-1 justify-center" />
+        <ExportButton type={exportType} label="PDF" format="pdf" className="flex-1 justify-center" />
+      </div>
     </div>
   );
 }

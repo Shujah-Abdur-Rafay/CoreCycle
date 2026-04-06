@@ -25,6 +25,7 @@ export interface AdminCourse {
   duration_minutes: number;
   is_published: boolean;
   access_type: CourseAccessType;
+  is_sme_specific: boolean;
   final_quiz_id: string | null;
   created_at: string;
   updated_at: string;
@@ -127,6 +128,7 @@ export function useAdminCourses() {
         duration_minutes: courseData.duration_minutes || 0,
         is_published: courseData.is_published || false,
         access_type: courseData.access_type || 'public',
+        is_sme_specific: courseData.is_sme_specific || false,
         final_quiz_id: courseData.final_quiz_id || null,
       } as any)
       .select()
@@ -150,6 +152,7 @@ export function useAdminCourses() {
         duration_minutes: courseData.duration_minutes,
         is_published: courseData.is_published,
         access_type: courseData.access_type,
+        is_sme_specific: courseData.is_sme_specific,
         final_quiz_id: courseData.final_quiz_id,
       } as any)
       .eq('id', courseId)

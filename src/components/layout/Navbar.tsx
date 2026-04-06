@@ -2,7 +2,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useSimulatedUser } from "@/components/admin/UserProfileSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,17 +13,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  Recycle, 
-  Menu, 
-  X, 
+import {
+  Recycle,
+  Menu,
+  X,
   ChevronDown,
   BookOpen,
   Shield,
   User,
   LogOut,
   Settings,
-  GraduationCap
+  GraduationCap,
+  ArrowLeftCircle,
+  Eye
 } from "lucide-react";
 
 const navItems = [
@@ -37,12 +42,32 @@ const navItems = [
   { label: "About", href: "/about" },
 ];
 
+const roleLabels: Record<string, string> = {
+  super_admin: "Super Admin",
+  producer_admin: "Producer Admin",
+  municipality_admin: "Municipality Admin",
+  sme_admin: "SME Admin",
+  learner: "Learner",
+};
+
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut, loading } = useAuth();
+  const { simulatedRole, setSimulatedRole, userRole } = useUserRole();
+  const { simulatedUser, setSimulatedUser, isSimulating } = useSimulatedUser();
+
+  const actualIsSuperAdmin = userRole?.role === 'super_admin';
+  const isRoleSimulating = actualIsSuperAdmin && !!simulatedRole;
+  const isAnySimulation = isRoleSimulating || isSimulating;
+
+  const handleExitSimulation = () => {
+    setSimulatedRole(null);
+    setSimulatedUser(null);
+    navigate('/dashboard');
+  };
 
   const isHomePage = location.pathname === "/";
 
@@ -233,6 +258,52 @@ export function Navbar() {
           </button>
         </div>
       </nav>
+
+      {/* Simulation Banner */}
+      <AnimatePresence>
+        {isAnySimulation && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-warning/15 border-b border-warning/40"
+          >
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-sm text-warning-foreground">
+                <Eye className="h-4 w-4 text-warning shrink-0" />
+                <span className="font-medium text-foreground">Simulation active:</span>
+                {isSimulating && simulatedUser ? (
+                  <span className="text-muted-foreground">
+                    viewing as{' '}
+                    <span className="font-semibold text-foreground">
+                      {simulatedUser.profile.full_name || simulatedUser.profile.email || 'Unknown User'}
+                    </span>
+                    <Badge variant="outline" className="ml-2 text-xs py-0 h-5 border-warning/50 text-warning">
+                      {roleLabels[simulatedUser.role] || simulatedUser.role}
+                    </Badge>
+                  </span>
+                ) : isRoleSimulating ? (
+                  <span className="text-muted-foreground">
+                    role set to{' '}
+                    <Badge variant="outline" className="ml-1 text-xs py-0 h-5 border-warning/50 text-warning">
+                      {roleLabels[simulatedRole!] || simulatedRole}
+                    </Badge>
+                  </span>
+                ) : null}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExitSimulation}
+                className="h-7 text-xs border-warning/50 text-warning hover:bg-warning/10 hover:text-warning shrink-0"
+              >
+                <ArrowLeftCircle className="h-3.5 w-3.5 mr-1" />
+                Back to Super Admin
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Menu */}
       <AnimatePresence>

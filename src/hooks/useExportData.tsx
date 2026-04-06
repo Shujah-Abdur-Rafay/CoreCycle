@@ -11,6 +11,7 @@ export type ExportType =
   | 'user_progress'       // per-user per-course progress + quiz scores
   | 'training_summary'    // one row per enrollment
   | 'quiz_results'        // one row per module completion with a quiz score
+  | 'ai_quiz_results'     // one row per AI quiz attempt
   | 'certificate_audit'   // all certificates
   | 'user_activity'       // user registrations + roles
   | 'compliance'          // per-company compliance rate
@@ -56,6 +57,17 @@ const COLUMNS: Record<ExportType, { key: string; label: string }[]> = {
     { key: 'passed',        label: 'Passed' },
     { key: 'attempts',      label: 'Status' },
     { key: 'completed_at',  label: 'Completed At' },
+  ],
+  ai_quiz_results: [
+    { key: 'quiz_title',   label: 'Quiz' },
+    { key: 'course_title', label: 'Course' },
+    { key: 'difficulty',   label: 'Difficulty' },
+    { key: 'learner_name', label: 'Learner Name' },
+    { key: 'email',        label: 'Email' },
+    { key: 'company_name', label: 'Company' },
+    { key: 'score',        label: 'Score (%)' },
+    { key: 'passed',       label: 'Passed' },
+    { key: 'completed_at', label: 'Completed At' },
   ],
   certificate_audit: [
     { key: 'certificate_number', label: 'Certificate #' },
@@ -257,6 +269,41 @@ async function fetchQuizResultRows(
       completed_at: fmtDate(mc.completed_at),
     };
   });
+}
+
+async function fetchAIQuizResultRows(
+  dateFrom?: string,
+  dateTo?: string
+): Promise<CsvRow[]> {
+  let query = (supabase as any)
+    .from('quiz_attempts')
+    .select(`
+      score,
+      passed,
+      completed_at,
+      course_id,
+      quiz:ai_generated_quizzes(title, difficulty, course_id, course:courses(title)),
+      profile:profiles!quiz_attempts_user_id_fkey(full_name, email, company_name)
+    `)
+    .order('completed_at', { ascending: false });
+
+  if (dateFrom) query = query.gte('completed_at', dateFrom);
+  if (dateTo)   query = query.lte('completed_at', dateTo + 'T23:59:59');
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data || []).map((a: any) => ({
+    quiz_title:   a.quiz?.title                   ?? '',
+    course_title: a.quiz?.course?.title            ?? '',
+    difficulty:   a.quiz?.difficulty               ?? '',
+    learner_name: a.profile?.full_name             ?? '',
+    email:        a.profile?.email                 ?? '',
+    company_name: a.profile?.company_name          ?? '',
+    score:        a.score,
+    passed:       a.passed ? 'Yes' : 'No',
+    completed_at: fmtDate(a.completed_at),
+  }));
 }
 
 async function fetchCertificateRows(
@@ -523,6 +570,70 @@ export async function exportMyProgress(userId: string): Promise<void> {
   downloadCsv(csv, `My_Training_Progress_${format(new Date(), 'yyyy-MM-dd')}`);
 }
 
+export async function exportMyProgressAsPdf(userId: string): Promise<void> {
+  const { data: enrollments, error } = await supabase
+    .from('enrollments')
+    .select(`
+      id, status, progress_percentage, time_spent_minutes,
+      enrolled_at, started_at, completed_at,
+      course:courses(title)
+    `)
+    .eq('user_id', userId)
+    .order('enrolled_at', { ascending: false });
+
+  if (error) throw error;
+
+  const { data: certs } = await supabase
+    .from('certificates')
+    .select('enrollment_id, certificate_number')
+    .eq('user_id', userId);
+  const certMap = new Map((certs || []).map(c => [c.enrollment_id, c.certificate_number]));
+
+  const { data: completions } = await supabase
+    .from('module_completions')
+    .select('enrollment_id, quiz_score, module:modules(title, quiz_pass_mark)')
+    .eq('user_id', userId)
+    .not('quiz_score', 'is', null);
+
+  const quizByEnrollment = new Map<string, { scores: number[] }>();
+  (completions || []).forEach((mc: any) => {
+    if (!quizByEnrollment.has(mc.enrollment_id)) {
+      quizByEnrollment.set(mc.enrollment_id, { scores: [] });
+    }
+    quizByEnrollment.get(mc.enrollment_id)!.scores.push(mc.quiz_score);
+  });
+
+  const headers = [
+    { key: 'course_title',       label: 'Course' },
+    { key: 'status',             label: 'Status' },
+    { key: 'progress_pct',       label: 'Progress (%)' },
+    { key: 'avg_quiz_score',     label: 'Avg Quiz Score (%)' },
+    { key: 'time_spent',         label: 'Time Spent' },
+    { key: 'enrolled_at',        label: 'Enrolled At' },
+    { key: 'completed_at',       label: 'Completed At' },
+    { key: 'certificate_number', label: 'Certificate #' },
+  ];
+
+  const rows = (enrollments || []).map((e: any) => {
+    const qd = quizByEnrollment.get(e.id);
+    const avgScore = qd && qd.scores.length > 0
+      ? Math.round(qd.scores.reduce((a: number, b: number) => a + b, 0) / qd.scores.length)
+      : '';
+    return {
+      course_title:       e.course?.title ?? '',
+      status:             e.status,
+      progress_pct:       e.progress_percentage ?? 0,
+      avg_quiz_score:     avgScore,
+      time_spent:         fmtMinutes(e.time_spent_minutes),
+      enrolled_at:        fmtDate(e.enrolled_at),
+      completed_at:       fmtDate(e.completed_at),
+      certificate_number: certMap.get(e.id) ?? '',
+    };
+  });
+
+  exportReportAsPdf(headers, rows, 'My Training Progress');
+}
+
 // ─── Shared row fetcher ───────────────────────────────────────────────────────
 
 async function fetchRows(
@@ -534,6 +645,7 @@ async function fetchRows(
     case 'user_progress':    return fetchUserProgressRows(dateFrom, dateTo);
     case 'training_summary': return fetchTrainingSummaryRows(dateFrom, dateTo);
     case 'quiz_results':     return fetchQuizResultRows(dateFrom, dateTo);
+    case 'ai_quiz_results':  return fetchAIQuizResultRows(dateFrom, dateTo);
     case 'certificate_audit':return fetchCertificateRows(dateFrom, dateTo);
     case 'user_activity':    return fetchUserActivityRows();
     case 'compliance':       return fetchComplianceRows();

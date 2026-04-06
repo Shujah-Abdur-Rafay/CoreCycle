@@ -52,6 +52,19 @@ export function useCertificates() {
     if (!user) return null;
 
     try {
+      // Guard: don't issue a duplicate certificate for the same enrollment
+      const { data: existing } = await supabase
+        .from('certificates')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('enrollment_id', enrollmentId)
+        .maybeSingle();
+
+      if (existing) {
+        await fetchCertificates();
+        return existing as Certificate;
+      }
+
       // Fetch user profile for name and company
       const { data: profile } = await supabase
         .from('profiles')
@@ -78,7 +91,7 @@ export function useCertificates() {
         .single();
 
       if (insertError) throw insertError;
-      
+
       await fetchCertificates();
       return data;
     } catch (err) {

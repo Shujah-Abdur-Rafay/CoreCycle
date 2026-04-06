@@ -106,6 +106,11 @@ export function ModuleNavigation({
             const isCurrent = module.id === currentModuleId;
             const isInstructorLed = module.requires_instructor_approval;
             const isMandatory = module.is_mandatory_for_certification;
+            const completion = completions.find(c => c.module_id === module.id);
+            const quizScore = module.has_quiz && status === 'completed' && completion?.quiz_score != null
+              ? completion.quiz_score
+              : null;
+            const quizPassed = quizScore !== null && quizScore >= module.quiz_pass_mark;
 
             return (
               <button
@@ -138,7 +143,19 @@ export function ModuleNavigation({
                       {formatDuration(module.duration_minutes)}
                     </span>
                     {module.has_quiz && (
-                      <span className="text-xs text-muted-foreground">• Quiz</span>
+                      <span className="flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground">• Quiz</span>
+                        {quizScore !== null && (
+                          <span className={cn(
+                            "text-[10px] font-semibold px-1.5 py-0 rounded-full",
+                            quizPassed
+                              ? "bg-leaf/15 text-leaf"
+                              : "bg-amber-500/15 text-amber-600"
+                          )}>
+                            {quizScore}%
+                          </span>
+                        )}
+                      </span>
                     )}
                     {isInstructorLed && (
                       <span className="text-xs text-amber-600 flex items-center gap-1">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Loader2, ImageIcon, Upload, FileText, Video, File, X, Lock, Globe, Users } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ImageIcon, Upload, FileText, Video, File, X, Lock, Globe, Users, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +79,7 @@ export function CourseEditor() {
     content_url: "",
     content_type: "",
     access_type: 'public' as CourseAccessType,
+    is_sme_specific: false,
     final_quiz_id: null as string | null,
   });
 
@@ -96,6 +97,7 @@ export function CourseEditor() {
           content_url: course.content_url || "",
           content_type: course.content_type || "",
           access_type: course.access_type ?? 'public',
+          is_sme_specific: course.is_sme_specific ?? false,
           final_quiz_id: course.final_quiz_id ?? null,
         });
       }
@@ -421,6 +423,40 @@ export function CourseEditor() {
                     </div>
                   </button>
                 ))}
+              </CardContent>
+            </Card>
+
+            {/* SME-Specific */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  Audience
+                </CardTitle>
+                <CardDescription>
+                  Restrict course to SME organisations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="sme_specific">SME-Specific</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Only visible to SME members when enabled
+                    </p>
+                  </div>
+                  <Switch
+                    id="sme_specific"
+                    checked={formData.is_sme_specific}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_sme_specific: checked })}
+                  />
+                </div>
+                {formData.is_sme_specific && (
+                  <p className="mt-2 text-xs text-warning flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    General learners will not see this course
+                  </p>
+                )}
               </CardContent>
             </Card>
 

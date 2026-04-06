@@ -15,6 +15,7 @@ import {
   Cell,
 } from "recharts";
 import { Building2, Users, Clock, TrendingUp } from "lucide-react";
+import { ExportButtonGroup } from "@/components/admin/ExportButton";
 
 // Green gradient based on compliance rate
 const getBarColor = (rate: number) => {
@@ -59,12 +60,17 @@ export function ComplianceDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <h1 className="text-3xl font-display font-bold text-foreground">
-            Compliance Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Platform-wide training compliance overview
-          </p>
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-3xl font-display font-bold text-foreground">
+                Compliance Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Platform-wide training compliance overview
+              </p>
+            </div>
+            <ExportButtonGroup type="compliance" label="Compliance Report" />
+          </div>
         </motion.div>
 
         {/* Stat Cards */}

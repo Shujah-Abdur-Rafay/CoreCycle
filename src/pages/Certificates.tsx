@@ -10,13 +10,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { generateCertificatePdf } from "@/lib/generateCertificatePdf";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { 
-  Award, 
-  Download, 
+import {
+  Award,
+  Download,
   Calendar,
   Building2,
   FileText,
-  Loader2
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 
 const Certificates = () => {
@@ -69,7 +70,7 @@ const Certificates = () => {
             My Certificates
           </h1>
           <p className="text-muted-foreground mt-1">
-            Download your earned certificates
+            Certificates are issued when you complete all course modules and required quizzes.
           </p>
         </motion.div>
 
@@ -93,7 +94,7 @@ const Certificates = () => {
                   No certificates yet
                 </h3>
                 <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                  Complete a course to earn your first certificate. Your achievements will appear here.
+                  Complete a course's modules and all required quizzes to earn your first certificate. Your achievements will appear here.
                 </p>
                 <Button variant="forest" onClick={() => navigate('/courses')}>
                   Browse Courses
@@ -138,18 +139,22 @@ const Certificates = () => {
                       {/* Details */}
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
+                          <Calendar className="h-4 w-4 shrink-0" />
                           <span>Issued: {format(new Date(certificate.issued_at), 'MMMM d, yyyy')}</span>
                         </div>
                         {certificate.company_name && (
                           <div className="flex items-center gap-2 text-muted-foreground">
-                            <Building2 className="h-4 w-4" />
+                            <Building2 className="h-4 w-4 shrink-0" />
                             <span>{certificate.company_name}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <FileText className="h-4 w-4" />
+                          <FileText className="h-4 w-4 shrink-0" />
                           <span className="font-mono text-xs">{certificate.certificate_number}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-emerald-600">
+                          <CheckCircle2 className="h-4 w-4 shrink-0" />
+                          <span className="text-xs font-medium">All modules & quizzes completed</span>
                         </div>
                       </div>
 

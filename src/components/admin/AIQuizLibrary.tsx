@@ -4,10 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,7 +24,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAIQuizzes, AIQuizWithQuestions } from "@/hooks/useAIQuizzes";
+import { useAIQuizzes, AIGeneratedQuiz, AIQuizWithQuestions } from "@/hooks/useAIQuizzes";
+import { useAdminCourses } from "@/hooks/useAdminCourses";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -26,19 +33,38 @@ import {
   Search,
   MoreVertical,
   Eye,
+  Pencil,
   Trash2,
   CheckCircle2,
   XCircle,
   FileText,
   Loader2,
   AlertCircle,
+  BookOpen,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 
+interface EditForm {
+  title: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  course_id: string;
+}
+
 export function AIQuizLibrary({ courseId }: { courseId?: string }) {
-  const { quizzes, loading, getQuizWithQuestions, deleteQuiz, publishQuiz } = useAIQuizzes(courseId);
+  const { quizzes, loading, getQuizWithQuestions, deleteQuiz, publishQuiz, updateQuiz } = useAIQuizzes(courseId);
+  const { courses } = useAdminCourses();
   const [searchQuery, setSearchQuery] = useState('');
   const [previewQuiz, setPreviewQuiz] = useState<AIQuizWithQuestions | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Edit state
+  const [editingQuiz, setEditingQuiz] = useState<AIGeneratedQuiz | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ title: '', description: '', difficulty: 'medium', course_id: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [coursePickerOpen, setCoursePickerOpen] = useState(false);
+  const [courseSearch, setCourseSearch] = useState('');
 
   const filteredQuizzes = quizzes.filter(q =>
     q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,6 +102,44 @@ export function AIQuizLibrary({ courseId }: { courseId?: string }) {
       toast.error(error.message || 'Failed to update quiz');
     }
   };
+
+  const openEditDialog = (quiz: AIGeneratedQuiz) => {
+    setEditingQuiz(quiz);
+    setEditForm({
+      title: quiz.title,
+      description: quiz.description || '',
+      difficulty: quiz.difficulty,
+      course_id: quiz.course_id || '',
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingQuiz) return;
+    if (!editForm.title.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await updateQuiz(editingQuiz.id, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim() || null,
+        difficulty: editForm.difficulty,
+        course_id: editForm.course_id || null,
+      });
+      toast.success('Quiz updated');
+      setEditingQuiz(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update quiz');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const filteredCourses = courses.filter(c =>
+    c.title.toLowerCase().includes(courseSearch.toLowerCase())
+  );
+  const editCourse = courses.find(c => c.id === editForm.course_id);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -160,6 +224,10 @@ export function AIQuizLibrary({ courseId }: { courseId?: string }) {
                           <Eye className="h-4 w-4 mr-2" />
                           Preview
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditDialog(quiz)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleTogglePublish(quiz.id, quiz.is_published)}
                         >
@@ -210,6 +278,15 @@ export function AIQuizLibrary({ courseId }: { courseId?: string }) {
                     )}
                   </div>
 
+                  {quiz.course_id && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <BookOpen className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {courses.find(c => c.id === quiz.course_id)?.title || 'Linked course'}
+                      </span>
+                    </div>
+                  )}
+
                   {quiz.source_filename && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <FileText className="h-3 w-3" />
@@ -236,6 +313,126 @@ export function AIQuizLibrary({ courseId }: { courseId?: string }) {
           ))}
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingQuiz} onOpenChange={(open) => { if (!open) setEditingQuiz(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Quiz</DialogTitle>
+            <DialogDescription>Update quiz details and course assignment</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Title *</Label>
+              <Input
+                value={editForm.title}
+                onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="Quiz title"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={editForm.description}
+                onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Brief description of the quiz"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Difficulty</Label>
+              <Select
+                value={editForm.difficulty}
+                onValueChange={v => setEditForm(f => ({ ...f, difficulty: v as 'easy' | 'medium' | 'hard' }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="hard">Hard</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Linked Course <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Popover open={coursePickerOpen} onOpenChange={setCoursePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                    {editCourse ? (
+                      <span className="flex items-center gap-2 truncate">
+                        <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {editCourse.title}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Select a course…</span>
+                    )}
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search courses…"
+                      value={courseSearch}
+                      onValueChange={setCourseSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No courses found.</CommandEmpty>
+                      <CommandGroup>
+                        {editForm.course_id && (
+                          <CommandItem
+                            value="__none__"
+                            onSelect={() => {
+                              setEditForm(f => ({ ...f, course_id: '' }));
+                              setCoursePickerOpen(false);
+                              setCourseSearch('');
+                            }}
+                          >
+                            <span className="text-muted-foreground">— No course —</span>
+                          </CommandItem>
+                        )}
+                        {filteredCourses.map(c => (
+                          <CommandItem
+                            key={c.id}
+                            value={c.id}
+                            onSelect={() => {
+                              setEditForm(f => ({ ...f, course_id: c.id }));
+                              setCoursePickerOpen(false);
+                              setCourseSearch('');
+                            }}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${editForm.course_id === c.id ? 'opacity-100' : 'opacity-0'}`}
+                            />
+                            <span className="truncate">{c.title}</span>
+                            {!c.is_published && (
+                              <Badge variant="outline" className="ml-auto text-xs">Draft</Badge>
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingQuiz(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Preview Dialog */}
       <Dialog open={!!previewQuiz} onOpenChange={() => setPreviewQuiz(null)}>

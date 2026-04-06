@@ -9,7 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useAIQuizzes } from "@/hooks/useAIQuizzes";
+import { useAdminCourses } from "@/hooks/useAdminCourses";
 import {
   generateQuizFromText,
   extractTextFromFile,
@@ -27,25 +30,32 @@ import {
   Trash2,
   Save,
   Eye,
+  ChevronsUpDown,
+  Check,
+  BookOpen,
 } from "lucide-react";
 
 type GenerationStep = 'input' | 'processing' | 'review' | 'saved';
 
 export function AIQuizGenerator({ courseId }: { courseId?: string }) {
   const { createQuiz } = useAIQuizzes(courseId);
-  
+  const { courses } = useAdminCourses();
+
   const [step, setStep] = useState<GenerationStep>('input');
   const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
-  
+
   // Input state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [textContent, setTextContent] = useState('');
   const [extractedText, setExtractedText] = useState('');
-  
+
   // Generation options
   const [quizTitle, setQuizTitle] = useState('');
   const [numQuestions, setNumQuestions] = useState(5);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(courseId || '');
+  const [coursePickerOpen, setCoursePickerOpen] = useState(false);
+  const [courseSearch, setCourseSearch] = useState('');
   
   // Generated quiz
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
@@ -139,7 +149,7 @@ export function AIQuizGenerator({ courseId }: { courseId?: string }) {
           difficulty,
           num_questions: generatedQuestions.length,
           module_id: null,
-          course_id: courseId || null,
+          course_id: selectedCourseId || courseId || null,
           is_published: false,
         },
         generatedQuestions.map(q => ({
@@ -173,11 +183,17 @@ export function AIQuizGenerator({ courseId }: { courseId?: string }) {
     setQuizTitle('');
     setNumQuestions(5);
     setDifficulty('medium');
+    setSelectedCourseId(courseId || '');
     setGeneratedQuestions([]);
     setQuizSummary('');
     setProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const filteredCourses = courses.filter(c =>
+    c.title.toLowerCase().includes(courseSearch.toLowerCase())
+  );
+  const selectedCourse = courses.find(c => c.id === selectedCourseId);
 
   const removeQuestion = (index: number) => {
     setGeneratedQuestions(prev => prev.filter((_, i) => i !== index));
@@ -287,6 +303,75 @@ export function AIQuizGenerator({ courseId }: { courseId?: string }) {
                   value={quizTitle}
                   onChange={(e) => setQuizTitle(e.target.value)}
                 />
+              </div>
+
+              {/* Course link */}
+              <div className="space-y-2">
+                <Label>Link to Course <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Popover open={coursePickerOpen} onOpenChange={setCoursePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedCourse ? (
+                        <span className="flex items-center gap-2 truncate">
+                          <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          {selectedCourse.title}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Select a course…</span>
+                      )}
+                      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search courses…"
+                        value={courseSearch}
+                        onValueChange={setCourseSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No courses found.</CommandEmpty>
+                        <CommandGroup>
+                          {selectedCourseId && (
+                            <CommandItem
+                              value="__none__"
+                              onSelect={() => {
+                                setSelectedCourseId('');
+                                setCoursePickerOpen(false);
+                                setCourseSearch('');
+                              }}
+                            >
+                              <span className="text-muted-foreground">— No course —</span>
+                            </CommandItem>
+                          )}
+                          {filteredCourses.map(c => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.id}
+                              onSelect={() => {
+                                setSelectedCourseId(c.id);
+                                setCoursePickerOpen(false);
+                                setCourseSearch('');
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${selectedCourseId === c.id ? 'opacity-100' : 'opacity-0'}`}
+                              />
+                              <span className="truncate">{c.title}</span>
+                              {!c.is_published && (
+                                <Badge variant="outline" className="ml-auto text-xs">Draft</Badge>
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

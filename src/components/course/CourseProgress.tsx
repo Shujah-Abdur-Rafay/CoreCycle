@@ -1,6 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { ModuleCompletion, Module } from "@/hooks/useModules";
-import { CheckCircle, Clock, Award } from "lucide-react";
+import { CheckCircle, Clock, Award, HelpCircle } from "lucide-react";
 
 interface CourseProgressProps {
   modules: Module[];
@@ -14,11 +14,19 @@ export function CourseProgress({
   courseDuration,
 }: CourseProgressProps) {
   const completedCount = completions.filter(c => c.status === 'completed').length;
-  const progressPercentage = modules.length > 0 
-    ? Math.round((completedCount / modules.length) * 100) 
+  const progressPercentage = modules.length > 0
+    ? Math.round((completedCount / modules.length) * 100)
     : 0;
-  
+
   const totalTimeSpent = completions.reduce((acc, c) => acc + (c.time_spent_minutes || 0), 0);
+
+  const quizModules = modules.filter(m => m.has_quiz);
+  const completedQuizScores = completions
+    .filter(c => c.quiz_score != null && quizModules.some(m => m.id === c.module_id))
+    .map(c => c.quiz_score as number);
+  const avgQuizScore = completedQuizScores.length > 0
+    ? Math.round(completedQuizScores.reduce((a, b) => a + b, 0) / completedQuizScores.length)
+    : null;
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
@@ -69,6 +77,34 @@ export function CourseProgress({
           </p>
         </div>
       </div>
+
+      {/* Quiz progress row — only shown when there are quiz modules */}
+      {quizModules.length > 0 && (
+        <div className="pt-3 border-t border-border space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <HelpCircle className="h-3.5 w-3.5" />
+              Quiz Progress
+            </span>
+            <span className="font-medium text-foreground">
+              {completedQuizScores.length}/{quizModules.length} taken
+              {avgQuizScore !== null && (
+                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                  avgQuizScore >= 70
+                    ? 'bg-leaf/15 text-leaf'
+                    : 'bg-amber-500/15 text-amber-600'
+                }`}>
+                  avg {avgQuizScore}%
+                </span>
+              )}
+            </span>
+          </div>
+          <Progress
+            value={quizModules.length > 0 ? (completedQuizScores.length / quizModules.length) * 100 : 0}
+            className="h-1.5"
+          />
+        </div>
+      )}
     </div>
   );
 }

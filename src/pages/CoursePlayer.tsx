@@ -46,9 +46,9 @@ const CoursePlayer = () => {
     approveInstructorModule,
     isInstructorModuleComplete
   } = useModules(courseId || '');
-  const { createCertificate } = useCertificates();
+  const { createCertificate, certificates } = useCertificates();
   const { resources } = useCourseResources(courseId);
-  const { getQuizWithQuestions } = useAIQuizzes();
+  const { quizzes: courseQuizzes, getQuizWithQuestions, saveQuizAttempt } = useAIQuizzes(courseId || undefined);
 
   const [currentModuleId, setCurrentModuleId] = useState<string | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -58,6 +58,10 @@ const CoursePlayer = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<any>(null);
+  const [practiceQuizData, setPracticeQuizData] = useState<AIQuizWithQuestions | null>(null);
+  const [showPracticeQuiz, setShowPracticeQuiz] = useState(false);
+
+  const hasCertificate = certificates.some(c => c.course_id === courseId);
 
   // Find course and enrollment
   useEffect(() => {
@@ -163,7 +167,6 @@ const CoursePlayer = () => {
         
         if (allComplete) {
           await markCourseComplete();
-          toast.success('Congratulations! You have completed the course!');
         }
       }
     } catch (error) {
@@ -189,7 +192,6 @@ const CoursePlayer = () => {
         toast.success('Quiz passed! Moving to the next module.');
       } else {
         await markCourseComplete();
-        toast.success('Congratulations! You have completed the course!');
       }
     } catch (error) {
       toast.error('Failed to save quiz results');
@@ -224,26 +226,70 @@ const CoursePlayer = () => {
       })
       .eq('id', enrollment.id);
 
-    // Create certificate
-    await createCertificate(enrollment.id, course.id, course.title);
-
-    // If the course has a final quiz, load and show it
     if (course.final_quiz_id) {
+      // Gate the certificate on final quiz completion
       try {
         const quizData = await getQuizWithQuestions(course.final_quiz_id);
         setFinalQuizData(quizData);
         setShowFinalQuiz(true);
+        toast.success('All modules complete! Submit the final quiz to receive your certificate.');
       } catch (err) {
-        console.error('Failed to load final quiz:', err);
+        console.error('Failed to load final quiz — issuing certificate anyway:', err);
+        if (!hasCertificate) {
+          await createCertificate(enrollment.id, course.id, course.title);
+        }
+        toast.success('Congratulations! Course completed. Your certificate is ready!');
       }
+    } else {
+      // No final quiz — issue certificate immediately
+      if (!hasCertificate) {
+        await createCertificate(enrollment.id, course.id, course.title);
+      }
+      toast.success('Congratulations! Course completed. Your certificate is ready!');
     }
   };
 
-  const handleFinalQuizComplete = (score: number) => {
+  const handleFinalQuizComplete = async (score: number) => {
     setFinalQuizScore(score);
     setShowFinalQuiz(false);
-    toast.success(`Final quiz complete! You scored ${score}%.`);
+
+    // Issue certificate now that the final quiz has been submitted
+    if (!hasCertificate && enrollment && course) {
+      await createCertificate(enrollment.id, course.id, course.title);
+      toast.success(`Final quiz submitted (${score}%). Your certificate is now ready!`);
+    } else {
+      toast.success(`Final quiz complete! You scored ${score}%.`);
+    }
   };
+
+  const openPracticeQuiz = async (quizId: string) => {
+    try {
+      const data = await getQuizWithQuestions(quizId);
+      setPracticeQuizData(data);
+      setShowPracticeQuiz(true);
+    } catch {
+      toast.error('Failed to load quiz');
+    }
+  };
+
+  const handlePracticeQuizComplete = async (score: number) => {
+    const passed = score >= 70;
+    if (practiceQuizData) {
+      try {
+        await saveQuizAttempt(practiceQuizData.id, courseId || null, score, passed, []);
+      } catch {
+        // Non-blocking — don't break UX if save fails
+      }
+    }
+    setShowPracticeQuiz(false);
+    setPracticeQuizData(null);
+    toast.success(`Quiz complete! You scored ${score}%.`);
+  };
+
+  // Practice quizzes = course-linked AI quizzes excluding the final quiz
+  const practiceQuizzes = courseQuizzes.filter(
+    q => q.is_published && q.id !== course?.final_quiz_id
+  );
 
   const currentModule = modules.find(m => m.id === currentModuleId);
   const loading = authLoading || coursesLoading || enrollmentsLoading || modulesLoading;
@@ -299,7 +345,7 @@ const CoursePlayer = () => {
           </h1>
 
           <div className="flex items-center gap-2">
-            {isComplete && (
+            {hasCertificate && (
               <Link to="/certificates">
                 <Button variant="outline" size="sm">
                   <Award className="h-4 w-4 mr-2" />
@@ -336,6 +382,25 @@ const CoursePlayer = () => {
               currentModuleId={currentModuleId || ''}
               onModuleSelect={handleModuleSelect}
             />
+
+            {/* Practice quizzes linked to this course */}
+            {practiceQuizzes.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                  Practice Quizzes
+                </p>
+                {practiceQuizzes.map(q => (
+                  <button
+                    key={q.id}
+                    onClick={() => openPracticeQuiz(q.id)}
+                    className="w-full text-left px-3 py-2.5 rounded-lg border border-border hover:bg-muted/50 transition-colors space-y-0.5"
+                  >
+                    <p className="text-sm font-medium text-foreground line-clamp-1">{q.title}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{q.difficulty} · {q.num_questions} questions</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
 
@@ -362,6 +427,13 @@ const CoursePlayer = () => {
                   quiz={finalQuizData}
                   onComplete={handleFinalQuizComplete}
                   onSkip={() => setShowFinalQuiz(false)}
+                  hideSkip={!hasCertificate}
+                />
+              ) : showPracticeQuiz && practiceQuizData ? (
+                <FinalQuizPanel
+                  quiz={practiceQuizData}
+                  onComplete={handlePracticeQuizComplete}
+                  onSkip={() => { setShowPracticeQuiz(false); setPracticeQuizData(null); }}
                 />
               ) : showQuiz && currentModule ? (
                 <QuizComponent
@@ -403,19 +475,26 @@ const CoursePlayer = () => {
                 className="mt-6 p-4 rounded-xl border bg-primary/5 border-primary/20 flex items-center gap-3"
               >
                 <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    Final Quiz Complete
+                    Final Quiz Submitted
                   </p>
                   <p className="text-xs text-muted-foreground">
                     You scored <strong>{finalQuizScore}%</strong> on the final quiz.
                   </p>
                 </div>
+                {hasCertificate && (
+                  <Link to="/certificates">
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <Award className="h-3.5 w-3.5" />
+                      Certificate
+                    </Button>
+                  </Link>
+                )}
                 {course?.final_quiz_id && (
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="ml-auto"
                     onClick={() => setShowFinalQuiz(true)}
                   >
                     Retake
@@ -424,20 +503,20 @@ const CoursePlayer = () => {
               </motion.div>
             )}
 
-            {/* Prompt to take final quiz when course is complete but quiz not yet attempted */}
-            {isComplete && course?.final_quiz_id && finalQuizScore === null && !showFinalQuiz && (
+            {/* Returning user: course done but final quiz not yet submitted (no cert) */}
+            {isComplete && course?.final_quiz_id && finalQuizScore === null && !showFinalQuiz && !hasCertificate && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-6 p-4 rounded-xl border bg-amber-500/5 border-amber-500/20 flex items-center gap-3"
+                className="mt-6 p-4 rounded-xl border bg-amber-500/10 border-amber-500/30 flex items-center gap-3"
               >
                 <Award className="h-5 w-5 text-amber-500 shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
-                    Final Quiz Available
+                    Final Quiz Required
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Complete the course final quiz to test your knowledge.
+                    Submit the final quiz to receive your certificate of completion.
                   </p>
                 </div>
                 <Button
@@ -449,7 +528,7 @@ const CoursePlayer = () => {
                       setShowFinalQuiz(true);
                     }
                   }}
-                  className="gap-1"
+                  className="gap-1 shrink-0"
                 >
                   Start <ChevronRight className="h-3 w-3" />
                 </Button>
@@ -480,9 +559,10 @@ interface FinalQuizPanelProps {
   quiz: AIQuizWithQuestions;
   onComplete: (score: number) => void;
   onSkip: () => void;
+  hideSkip?: boolean;
 }
 
-function FinalQuizPanel({ quiz, onComplete, onSkip }: FinalQuizPanelProps) {
+function FinalQuizPanel({ quiz, onComplete, onSkip, hideSkip = false }: FinalQuizPanelProps) {
   const [answers, setAnswers] = useState<(number | null)[]>(
     Array(quiz.questions.length).fill(null)
   );
@@ -558,7 +638,9 @@ function FinalQuizPanel({ quiz, onComplete, onSkip }: FinalQuizPanelProps) {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="capitalize">{quiz.difficulty}</Badge>
-          <Button variant="ghost" size="sm" onClick={onSkip}>Skip</Button>
+          {!hideSkip && (
+            <Button variant="ghost" size="sm" onClick={onSkip}>Skip</Button>
+          )}
         </div>
       </div>
 
