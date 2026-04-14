@@ -53,7 +53,8 @@ export function ProtectedRoute({
   if (allowedRoles && allowedRoles.length > 0) {
     // Use the actual (non-simulated) role for security checks
     const actualRole = userRole?.role ?? null;
-    if (!actualRole || !allowedRoles.includes(actualRole)) {
+    const isAllowed = actualRole && (allowedRoles.includes(actualRole) || actualRole === 'super_admin');
+    if (!isAllowed) {
       return <Navigate to={redirectTo} replace />;
     }
   }

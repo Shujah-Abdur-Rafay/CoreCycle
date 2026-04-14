@@ -37,7 +37,6 @@ const Admin = () => {
   const isModuleManager = path.match(/^\/admin\/courses\/[^/]+\/modules$/);
   const isUserManagement = path === "/admin/users";
   const isReports = path === "/admin/reports";
-  const isSettings = path === "/admin/settings";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -50,6 +49,13 @@ const Admin = () => {
       navigate("/dashboard");
     }
   }, [actualIsSuperAdmin, roleLoading, user, navigate]);
+
+  // When a role is being simulated, redirect to /dashboard to show the user view
+  useEffect(() => {
+    if (!roleLoading && actualIsSuperAdmin && simulatedRole) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [simulatedRole, roleLoading, actualIsSuperAdmin, navigate]);
 
   if (authLoading || roleLoading) {
     return (
@@ -154,23 +160,7 @@ const Admin = () => {
     );
   }
 
-  if (isSettings) {
-    return (
-      <AdminLayout>
-        <div className="space-y-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="text-3xl font-display font-bold text-foreground">Admin Settings</h1>
-            <p className="text-muted-foreground mt-1">Configure global platform settings</p>
-          </motion.div>
-          <div className="p-8 text-center border rounded-xl bg-muted/20">
-            <p className="text-muted-foreground">Global settings implementation goes here.</p>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  // Default admin overview
+// Default admin overview
   return (
     <AdminLayout>
       <div className="space-y-8">

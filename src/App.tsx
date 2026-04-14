@@ -68,6 +68,22 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/sme-dashboard/users"
+                  element={
+                    <ProtectedRoute allowedRoles={["sme_admin"]} redirectTo="/dashboard">
+                      <SMEAdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sme-dashboard/smes"
+                  element={
+                    <ProtectedRoute allowedRoles={["sme_admin"]} redirectTo="/dashboard">
+                      <SMEAdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* ── Report access (approved admin roles) ── */}
                 <Route

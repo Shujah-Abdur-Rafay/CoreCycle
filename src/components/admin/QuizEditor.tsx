@@ -30,9 +30,10 @@ import { toast } from "sonner";
 interface QuizEditorProps {
   moduleId: string;
   onClose: () => void;
+  embedded?: boolean;
 }
 
-export function QuizEditor({ moduleId, onClose }: QuizEditorProps) {
+export function QuizEditor({ moduleId, onClose, embedded = false }: QuizEditorProps) {
   const { questions, loading, createQuestion, updateQuestion, deleteQuestion } = useAdminQuizQuestions(moduleId);
   const [saving, setSaving] = useState<string | null>(null);
   const [localQuestions, setLocalQuestions] = useState<AdminQuizQuestion[]>([]);
@@ -234,9 +235,11 @@ export function QuizEditor({ moduleId, onClose }: QuizEditorProps) {
         </>
       )}
 
-      <div className="flex justify-end pt-4 border-t">
-        <Button onClick={onClose}>Done</Button>
-      </div>
+      {!embedded && (
+        <div className="flex justify-end pt-4 border-t">
+          <Button onClick={onClose}>Done</Button>
+        </div>
+      )}
     </div>
   );
 }

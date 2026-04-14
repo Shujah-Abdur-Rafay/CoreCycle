@@ -65,6 +65,7 @@ export function useAdminCourses() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { userRole, loading: roleLoading } = useUserRole();
+  // Use the ACTUAL role (not simulated) so courses always load for real super admins
   const isSuperAdmin = userRole?.role === 'super_admin';
 
   const fetchCourses = async () => {
@@ -107,7 +108,7 @@ export function useAdminCourses() {
         })
       );
 
-      setCourses(coursesWithCounts);
+      setCourses(coursesWithCounts as unknown as AdminCourse[]);
     } catch (err) {
       setError(err as Error);
     } finally {
@@ -212,7 +213,10 @@ export function useAdminModules(courseId: string | undefined) {
   const [error, setError] = useState<Error | null>(null);
 
   const fetchModules = async () => {
-    if (!courseId) return;
+    if (!courseId) {
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -327,12 +331,12 @@ export function useCourseResources(courseId: string | undefined) {
     try {
       setLoading(true);
       const { data, error: fetchError } = await supabase
-        .from('course_resources')
+        .from('course_resources' as any)
         .select('*')
         .eq('course_id', courseId)
         .order('created_at', { ascending: true });
       if (fetchError) throw fetchError;
-      setResources((data || []) as CourseResource[]);
+      setResources((data || []) as unknown as CourseResource[]);
     } catch (err) {
       setError(err as Error);
     } finally {
@@ -344,13 +348,13 @@ export function useCourseResources(courseId: string | undefined) {
     resource: Pick<CourseResource, 'title' | 'resource_type' | 'url' | 'file_type'>
   ): Promise<CourseResource> => {
     const { data, error } = await supabase
-      .from('course_resources')
+      .from('course_resources' as any)
       .insert({ course_id: courseId!, ...resource })
       .select()
       .single();
     if (error) throw error;
-    setResources(prev => [...prev, data as CourseResource]);
-    return data as CourseResource;
+    setResources(prev => [...prev, data as unknown as CourseResource]);
+    return data as unknown as CourseResource;
   };
 
   const deleteResource = async (resourceId: string) => {
@@ -367,7 +371,7 @@ export function useCourseResources(courseId: string | undefined) {
       }
     }
     const { error } = await supabase
-      .from('course_resources')
+      .from('course_resources' as any)
       .delete()
       .eq('id', resourceId);
     if (error) throw error;
@@ -412,7 +416,10 @@ export function useAdminQuizQuestions(moduleId: string | undefined) {
   const [error, setError] = useState<Error | null>(null);
 
   const fetchQuestions = async () => {
-    if (!moduleId) return;
+    if (!moduleId) {
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);

@@ -60,6 +60,7 @@ const CoursePlayer = () => {
   const [enrollment, setEnrollment] = useState<any>(null);
   const [practiceQuizData, setPracticeQuizData] = useState<AIQuizWithQuestions | null>(null);
   const [showPracticeQuiz, setShowPracticeQuiz] = useState(false);
+  const [courseJustCompleted, setCourseJustCompleted] = useState(false);
 
   const hasCertificate = certificates.some(c => c.course_id === courseId);
 
@@ -128,11 +129,37 @@ const CoursePlayer = () => {
     setSidebarOpen(false);
   };
 
+  /**
+   * Fresh DB check: queries module_completions directly instead of relying on
+   * potentially-stale React state. Calls markCourseComplete if every module is done.
+   */
+  const checkAndFinalizeCourse = async () => {
+    if (!enrollment || !course || modules.length === 0) return;
+
+    const { data: freshCompletions } = await supabase
+      .from('module_completions')
+      .select('module_id, status, instructor_approved')
+      .eq('enrollment_id', enrollment.id)
+      .eq('user_id', user!.id);
+
+    if (!freshCompletions) return;
+
+    const allComplete = modules.every(m => {
+      const comp = freshCompletions.find(c => c.module_id === m.id);
+      if (m.requires_instructor_approval) return comp?.instructor_approved === true;
+      return comp?.status === 'completed';
+    });
+
+    if (allComplete) {
+      await markCourseComplete();
+    }
+  };
+
   const handleModuleComplete = async () => {
     if (!currentModuleId) return;
-    
+
     const currentModuleData = modules.find(m => m.id === currentModuleId);
-    
+
     // For instructor-led modules, check if it's approved
     if (currentModuleData?.requires_instructor_approval) {
       if (!isInstructorModuleComplete(currentModuleId)) {
@@ -149,25 +176,16 @@ const CoursePlayer = () => {
       if (!currentModuleData?.requires_instructor_approval) {
         await completeModule(currentModuleId);
       }
-      await updateEnrollmentProgress();
-      
-      // Move to next module
+
       const currentIndex = modules.findIndex(m => m.id === currentModuleId);
       if (currentIndex < modules.length - 1) {
+        await updateEnrollmentProgress(currentIndex + 1);
         setCurrentModuleId(modules[currentIndex + 1].id);
         toast.success('Module completed! Moving to the next one.');
       } else {
-        // Check if all modules are complete including instructor-led ones
-        const allComplete = modules.every(m => {
-          if (m.requires_instructor_approval) {
-            return isInstructorModuleComplete(m.id);
-          }
-          return getModuleStatus(m.id) === 'completed';
-        });
-        
-        if (allComplete) {
-          await markCourseComplete();
-        }
+        // Last module — use a fresh DB query to avoid stale-state false negatives
+        await updateEnrollmentProgress(modules.length);
+        await checkAndFinalizeCourse();
       }
     } catch (error) {
       toast.error('Failed to save progress');
@@ -182,33 +200,36 @@ const CoursePlayer = () => {
 
     try {
       await completeModule(currentModuleId!, score);
-      await updateEnrollmentProgress();
       setShowQuiz(false);
 
-      // Move to next module
       const currentIndex = modules.findIndex(m => m.id === currentModuleId);
       if (currentIndex < modules.length - 1) {
+        await updateEnrollmentProgress(currentIndex + 1);
         setCurrentModuleId(modules[currentIndex + 1].id);
         toast.success('Quiz passed! Moving to the next module.');
       } else {
-        await markCourseComplete();
+        await updateEnrollmentProgress(modules.length);
+        await checkAndFinalizeCourse();
       }
     } catch (error) {
       toast.error('Failed to save quiz results');
     }
   };
 
-  const updateEnrollmentProgress = async () => {
+  /** completedSoFar: the number of completed modules after this action */
+  const updateEnrollmentProgress = async (completedSoFar: number) => {
     if (!enrollment) return;
 
-    const completedCount = completions.filter(c => c.status === 'completed').length + 1;
-    const progressPercentage = Math.round((completedCount / modules.length) * 100);
+    const progressPercentage = Math.min(
+      100,
+      Math.round((completedSoFar / modules.length) * 100)
+    );
 
     await supabase
       .from('enrollments')
       .update({
         progress_percentage: progressPercentage,
-        status: progressPercentage === 100 ? 'completed' : 'in_progress',
+        status: progressPercentage >= 100 ? 'completed' : 'in_progress',
         started_at: enrollment.started_at || new Date().toISOString()
       })
       .eq('id', enrollment.id);
@@ -237,6 +258,7 @@ const CoursePlayer = () => {
         console.error('Failed to load final quiz — issuing certificate anyway:', err);
         if (!hasCertificate) {
           await createCertificate(enrollment.id, course.id, course.title);
+          setCourseJustCompleted(true);
         }
         toast.success('Congratulations! Course completed. Your certificate is ready!');
       }
@@ -244,6 +266,7 @@ const CoursePlayer = () => {
       // No final quiz — issue certificate immediately
       if (!hasCertificate) {
         await createCertificate(enrollment.id, course.id, course.title);
+        setCourseJustCompleted(true);
       }
       toast.success('Congratulations! Course completed. Your certificate is ready!');
     }
@@ -256,6 +279,7 @@ const CoursePlayer = () => {
     // Issue certificate now that the final quiz has been submitted
     if (!hasCertificate && enrollment && course) {
       await createCertificate(enrollment.id, course.id, course.title);
+      setCourseJustCompleted(true);
       toast.success(`Final quiz submitted (${score}%). Your certificate is now ready!`);
     } else {
       toast.success(`Final quiz complete! You scored ${score}%.`);
@@ -456,7 +480,9 @@ const CoursePlayer = () => {
                   onApproveInstructorModule={currentModule.requires_instructor_approval
                     ? async () => {
                         await approveInstructorModule(currentModule.id);
-                        await updateEnrollmentProgress();
+                        const completedCount = completions.filter(c => c.status === 'completed').length;
+                        await updateEnrollmentProgress(completedCount + 1);
+                        await checkAndFinalizeCourse();
                       }
                     : undefined}
                 />
@@ -532,6 +558,52 @@ const CoursePlayer = () => {
                 >
                   Start <ChevronRight className="h-3 w-3" />
                 </Button>
+              </motion.div>
+            )}
+
+            {/* ── Course Completion Banner ── */}
+            {(courseJustCompleted || (hasCertificate && isComplete)) && !showFinalQuiz && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                className="mt-8 rounded-2xl overflow-hidden border border-leaf/30 shadow-lg"
+              >
+                {/* Gradient header */}
+                <div className="bg-gradient-to-r from-forest to-leaf px-6 py-5 flex items-center gap-4 text-white">
+                  <div className="p-2.5 bg-white/20 rounded-xl shrink-0">
+                    <Award className="h-7 w-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {courseJustCompleted ? 'Congratulations! 🎉' : 'Course Completed'}
+                    </h3>
+                    <p className="text-sm text-white/80">
+                      {courseJustCompleted
+                        ? 'Your certificate has been issued and is ready to download.'
+                        : 'You have already completed this course and earned a certificate.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="bg-leaf/5 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {course?.title}
+                    </p>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-leaf" />
+                      All modules &amp; quizzes completed
+                    </div>
+                  </div>
+                  <Link to="/certificates">
+                    <Button variant="forest" className="gap-2 shrink-0">
+                      <Award className="h-4 w-4" />
+                      View My Certificate
+                    </Button>
+                  </Link>
+                </div>
               </motion.div>
             )}
 

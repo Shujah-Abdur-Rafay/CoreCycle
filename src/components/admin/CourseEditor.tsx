@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Save, Loader2, ImageIcon, Upload, FileText, Video, File, X, Lock, Globe, Users, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,13 +61,16 @@ const ACCESS_TYPE_OPTIONS: { value: CourseAccessType; label: string; description
 
 export function CourseEditor() {
   const navigate = useNavigate();
-  const { courseId } = useParams();
+  const location = useLocation();
+  const match = location.pathname.match(/^\/admin\/courses\/(.+)\/edit$/);
+  const courseId = useParams().courseId || (match ? match[1] : undefined);
   const isEditing = Boolean(courseId);
-  const { courses, createCourse, updateCourse } = useAdminCourses();
+  const { createCourse, updateCourse } = useAdminCourses();
   const { quizzes: allQuizzes, loading: quizzesLoading } = useAIQuizzes();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
+  const [courseLoading, setCourseLoading] = useState(isEditing);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -83,26 +86,45 @@ export function CourseEditor() {
     final_quiz_id: null as string | null,
   });
 
+  // When editing: fetch course data directly from Supabase (avoids race with shared hook)
   useEffect(() => {
-    if (isEditing && courses.length > 0) {
-      const course = courses.find(c => c.id === courseId);
-      if (course) {
-        setFormData({
-          title: course.title,
-          description: course.description || "",
-          short_description: course.short_description || "",
-          thumbnail_url: course.thumbnail_url || "",
-          duration_minutes: course.duration_minutes,
-          is_published: course.is_published,
-          content_url: course.content_url || "",
-          content_type: course.content_type || "",
-          access_type: course.access_type ?? 'public',
-          is_sme_specific: course.is_sme_specific ?? false,
-          final_quiz_id: course.final_quiz_id ?? null,
-        });
+    if (!isEditing || !courseId) return;
+
+    const fetchCourse = async () => {
+      setCourseLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('courses')
+          .select('*')
+          .eq('id', courseId)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setFormData({
+            title: data.title,
+            description: data.description || "",
+            short_description: data.short_description || "",
+            thumbnail_url: data.thumbnail_url || "",
+            duration_minutes: data.duration_minutes,
+            is_published: data.is_published,
+            content_url: data.content_url || "",
+            content_type: data.content_type || "",
+            access_type: (data as any).access_type ?? 'public',
+            is_sme_specific: (data as any).is_sme_specific ?? false,
+            final_quiz_id: (data as any).final_quiz_id ?? null,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load course:', err);
+        toast.error('Failed to load course data');
+      } finally {
+        setCourseLoading(false);
       }
-    }
-  }, [courseId, courses, isEditing]);
+    };
+
+    fetchCourse();
+  }, [courseId, isEditing]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,6 +210,14 @@ export function CourseEditor() {
       setLoading(false);
     }
   };
+
+  if (courseLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

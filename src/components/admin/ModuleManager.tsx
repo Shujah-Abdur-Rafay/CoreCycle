@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
-  ArrowLeft, 
-  Plus, 
-  GripVertical, 
-  Pencil, 
-  Trash2, 
+  ArrowLeft,
+  Plus,
+  GripVertical,
+  Pencil,
+  Trash2,
   Save,
-  X,
   Loader2,
   HelpCircle,
   Clock,
@@ -52,11 +51,12 @@ import { toast } from "sonner";
 
 export function ModuleManager() {
   const navigate = useNavigate();
-  const { courseId } = useParams();
+  const location = useLocation();
+  const match = location.pathname.match(/^\/admin\/courses\/(.+)\/modules$/);
+  const courseId = useParams().courseId || (match ? match[1] : undefined);
   const { modules, loading, createModule, updateModule, deleteModule } = useAdminModules(courseId);
   
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [quizDialogOpen, setQuizDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedModule, setSelectedModule] = useState<AdminModule | null>(null);
   const [saving, setSaving] = useState(false);
@@ -118,11 +118,6 @@ export function ModuleManager() {
     setEditDialogOpen(true);
   };
 
-  const openQuizEditor = (module: AdminModule) => {
-    setSelectedModule(module);
-    setQuizDialogOpen(true);
-  };
-
   const handleSaveModule = async () => {
     if (!formData.title.trim()) {
       toast.error("Module title is required");
@@ -132,13 +127,22 @@ export function ModuleManager() {
     setSaving(true);
     try {
       if (selectedModule) {
-        await updateModule(selectedModule.id, formData);
+        const updated = await updateModule(selectedModule.id, formData);
+        setSelectedModule(updated as AdminModule);
         toast.success("Module updated successfully");
+        if (!formData.has_quiz) {
+          setEditDialogOpen(false);
+        }
       } else {
-        await createModule(formData);
+        const newModule = await createModule(formData);
         toast.success("Module created successfully");
+        if (formData.has_quiz && newModule) {
+          // Stay open so admin can immediately add quiz questions
+          setSelectedModule(newModule as AdminModule);
+        } else {
+          setEditDialogOpen(false);
+        }
       }
-      setEditDialogOpen(false);
     } catch (error) {
       toast.error("Failed to save module");
     } finally {
@@ -259,17 +263,6 @@ export function ModuleManager() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {module.has_quiz && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openQuizEditor(module)}
-                          className="gap-1"
-                        >
-                          <HelpCircle className="h-3 w-3" />
-                          Quiz
-                        </Button>
-                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -297,9 +290,9 @@ export function ModuleManager() {
       </motion.div>
 
       {/* Edit Module Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) setEditDialogOpen(false); }}>
+        <DialogContent className={`${formData.has_quiz && selectedModule ? "max-w-4xl" : "max-w-2xl"} p-0 flex flex-col`} style={{ maxHeight: '90vh' }}>
+          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <DialogTitle>
               {selectedModule ? "Edit Module" : "Add New Module"}
             </DialogTitle>
@@ -307,7 +300,8 @@ export function ModuleManager() {
               Configure module content and settings
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="module-title">Title *</Label>
               <Input
@@ -388,35 +382,57 @@ export function ModuleManager() {
                 />
               </div>
             )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveModule} disabled={saving} className="gap-2">
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              {selectedModule ? "Save Changes" : "Create Module"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Quiz Editor Dialog */}
-      <Dialog open={quizDialogOpen} onOpenChange={setQuizDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Quiz Editor</DialogTitle>
-            <DialogDescription>
-              {selectedModule?.title}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedModule && (
-            <QuizEditor moduleId={selectedModule.id} onClose={() => setQuizDialogOpen(false)} />
-          )}
+            {/* Inline Quiz Editor — shown when module is saved and has_quiz is on */}
+            {formData.has_quiz && selectedModule && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-muted/50 border-b flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-sm">Quiz Questions</p>
+                    <p className="text-xs text-muted-foreground">
+                      Changes are saved automatically as you type
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <QuizEditor moduleId={selectedModule.id} onClose={() => {}} embedded />
+                </div>
+              </div>
+            )}
+
+            {formData.has_quiz && !selectedModule && (
+              <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground text-center border border-dashed">
+                Save the module first — quiz questions can then be added here
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 px-6 py-4 border-t shrink-0">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              {formData.has_quiz && selectedModule ? "Close" : "Cancel"}
+            </Button>
+            {(!selectedModule || !formData.has_quiz) && (
+              <Button onClick={handleSaveModule} disabled={saving} className="gap-2">
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {selectedModule ? "Save Changes" : "Create Module"}
+              </Button>
+            )}
+            {selectedModule && formData.has_quiz && (
+              <Button onClick={handleSaveModule} disabled={saving} className="gap-2">
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Save Module
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

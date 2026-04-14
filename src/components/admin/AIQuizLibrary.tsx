@@ -436,66 +436,79 @@ export function AIQuizLibrary({ courseId }: { courseId?: string }) {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewQuiz} onOpenChange={() => setPreviewQuiz(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-3xl p-0 flex flex-col" style={{ maxHeight: '88vh' }}>
+          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2 flex-wrap">
               {previewQuiz?.title}
               <Badge variant="outline" className={getDifficultyColor(previewQuiz?.difficulty || 'medium')}>
                 {previewQuiz?.difficulty}
               </Badge>
+              {previewQuiz && (
+                <span className="text-sm font-normal text-muted-foreground ml-auto">
+                  {previewQuiz.questions.length} question{previewQuiz.questions.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </DialogTitle>
             {previewQuiz?.description && (
               <DialogDescription>{previewQuiz.description}</DialogDescription>
             )}
           </DialogHeader>
 
-          {loadingPreview ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : previewQuiz ? (
-            <div className="space-y-6 mt-4">
-              {previewQuiz.questions.map((q, idx) => (
-                <div key={q.id} className="space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Badge variant="outline" className="shrink-0">Q{idx + 1}</Badge>
-                    <p className="font-medium">{q.question}</p>
-                  </div>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {loadingPreview ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : previewQuiz ? (
+              <div className="space-y-6">
+                {previewQuiz.questions.map((q, idx) => (
+                  <div key={q.id} className="space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Badge variant="outline" className="shrink-0 mt-0.5">Q{idx + 1}</Badge>
+                      <p className="font-medium leading-relaxed">{q.question}</p>
+                    </div>
 
-                  <div className="space-y-2 ml-12">
-                    {q.options.map((opt, optIdx) => (
-                      <div
-                        key={optIdx}
-                        className={`p-3 rounded-lg border text-sm ${
-                          optIdx === q.correct_answer_index
-                            ? 'border-emerald-500 bg-emerald-500/10'
-                            : 'border-border'
-                        }`}
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="font-mono font-medium shrink-0">
-                            {String.fromCharCode(65 + optIdx)}.
-                          </span>
-                          <span className="flex-1">{opt}</span>
-                          {optIdx === q.correct_answer_index && (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                          )}
+                    <div className="space-y-2 ml-10">
+                      {q.options.map((opt, optIdx) => (
+                        <div
+                          key={optIdx}
+                          className={`p-3 rounded-lg border text-sm ${
+                            optIdx === q.correct_answer_index
+                              ? 'border-emerald-500 bg-emerald-500/10'
+                              : 'border-border bg-background'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className="font-mono font-medium shrink-0">
+                              {String.fromCharCode(65 + optIdx)}.
+                            </span>
+                            <span className="flex-1">{opt}</span>
+                            {optIdx === q.correct_answer_index && (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
 
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 text-sm">
-                      <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-medium">Explanation: </span>
-                        <span className="text-muted-foreground">{q.explanation}</span>
-                      </div>
+                      {q.explanation && (
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 text-sm border border-border/50">
+                          <AlertCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-medium">Explanation: </span>
+                            <span className="text-muted-foreground">{q.explanation}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex justify-end px-6 py-4 border-t shrink-0">
+            <Button variant="outline" onClick={() => setPreviewQuiz(null)}>Close</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

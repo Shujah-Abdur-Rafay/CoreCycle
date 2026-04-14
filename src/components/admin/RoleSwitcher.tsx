@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useUserRole, AppRole } from "@/hooks/useUserRole";
 import {
   Select,
@@ -19,18 +18,17 @@ const roleLabels: Record<AppRole, string> = {
   learner: "Learner",
 };
 
-const roleColors: Record<AppRole, string> = {
-  super_admin: "bg-destructive text-destructive-foreground",
-  producer_admin: "bg-primary text-primary-foreground",
-  municipality_admin: "bg-secondary text-secondary-foreground",
-  sme_admin: "bg-accent text-accent-foreground",
-  learner: "bg-muted text-muted-foreground",
-};
+interface RoleSwitcherProps {
+  /** When true, renders a smaller inline variant suited for the top header bar */
+  compact?: boolean;
+}
 
-export function RoleSwitcher() {
-  const { isSuperAdmin, simulatedRole, setSimulatedRole, userRole } = useUserRole();
+export function RoleSwitcher({ compact = false }: RoleSwitcherProps) {
+  const { userRole, simulatedRole, setSimulatedRole } = useUserRole();
 
-  if (!isSuperAdmin) return null;
+  // Always use ACTUAL role so the switcher stays visible while simulating
+  const actualIsSuperAdmin = userRole?.role === 'super_admin';
+  if (!actualIsSuperAdmin) return null;
 
   const handleRoleChange = (value: string) => {
     if (value === "none") {
@@ -40,8 +38,48 @@ export function RoleSwitcher() {
     }
   };
 
-  const currentViewRole = simulatedRole || userRole?.role;
+  if (compact) {
+    // Inline compact version for the header bar
+    return (
+      <div className="flex items-center gap-2">
+        {simulatedRole ? (
+          <Eye className="h-4 w-4 text-warning shrink-0" />
+        ) : (
+          <Shield className="h-4 w-4 text-primary shrink-0" />
+        )}
+        <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">View as:</span>
+        <Select value={simulatedRole || "none"} onValueChange={handleRoleChange}>
+          <SelectTrigger className="h-8 w-[160px] text-xs">
+            <SelectValue placeholder="Select role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">
+              <div className="flex items-center gap-2">
+                <Shield className="h-3.5 w-3.5" />
+                Super Admin (Default)
+              </div>
+            </SelectItem>
+            <SelectItem value="producer_admin">Producer Admin</SelectItem>
+            <SelectItem value="municipality_admin">Municipality Admin</SelectItem>
+            <SelectItem value="sme_admin">SME Admin</SelectItem>
+            <SelectItem value="learner">Learner</SelectItem>
+          </SelectContent>
+        </Select>
+        {simulatedRole && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSimulatedRole(null)}
+            className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <EyeOff className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    );
+  }
 
+  // Full panel version (used on the admin overview page)
   return (
     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border">
       <div className="flex items-center gap-2">

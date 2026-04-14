@@ -139,7 +139,10 @@ export function useCourseAllocations() {
         .from('course_allocations')
         .insert(insertData);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('course_allocations insert error:', insertError.message, insertError.details, insertError.hint, insertError.code);
+        throw insertError;
+      }
 
       await fetchAllocations();
       return { error: null };
