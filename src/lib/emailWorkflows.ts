@@ -7,6 +7,7 @@ import {
   generateCourseCompletionEmail,
   generatePasswordResetEmail,
   generateTeamInvitationEmail,
+  generateAdminAdditionEmail,
   type WelcomeEmailData,
   type RegistrationConfirmationData,
   type AccountApprovalData,
@@ -14,6 +15,7 @@ import {
   type CourseCompletionData,
   type PasswordResetData,
   type TeamInvitationData,
+  type AdminAdditionData,
 } from './emailTemplates';
 
 // ─── Base URLs (from environment) ────────────────────────────────────────────
@@ -223,6 +225,32 @@ export async function sendTeamInvitationEmail(data: {
 }
 
 /**
+ * Send notification when a user is promoted to admin or SME admin
+ */
+export async function sendAdminAdditionEmail(data: {
+  email: string;
+  recipientName: string;
+  addedByName: string;
+  role: string;
+}) {
+  const emailData: AdminAdditionData = {
+    recipientName: data.recipientName,
+    addedByName: data.addedByName,
+    role: data.role,
+    dashboardUrl: `${BASE_URL}/dashboard`,
+    loginUrl: `${BASE_URL}/auth?mode=login`,
+  };
+
+  const html = injectGlobalUrls(generateAdminAdditionEmail(emailData));
+
+  return emailService.sendEmail({
+    to: data.email,
+    subject: `You've been added as ${data.role} on Corecycle`,
+    html,
+  });
+}
+
+/**
  * Send bulk course allocations (with rate limiting)
  */
 export async function sendBulkCourseAllocations(
@@ -252,7 +280,6 @@ export async function sendBulkCourseAllocations(
     ),
   }));
 
-  // Send with 200ms delay between each to avoid rate limits
   return emailService.sendBulkEmails(emails, 200);
 }
 
@@ -266,6 +293,7 @@ export const emailWorkflows = {
   sendCourseCompletionEmail,
   sendPasswordResetEmail,
   sendTeamInvitationEmail,
+  sendAdminAdditionEmail,
   sendBulkCourseAllocations,
 };
 

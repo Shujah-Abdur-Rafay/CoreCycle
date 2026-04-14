@@ -18,7 +18,7 @@ import {
   extractTextFromFile,
   validateContent,
   GeneratedQuestion,
-} from "@/lib/geminiQuizGenerator";
+} from "@/lib/openaiQuizGenerator";
 import { toast } from "sonner";
 import {
   Sparkles,

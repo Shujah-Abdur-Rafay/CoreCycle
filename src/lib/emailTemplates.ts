@@ -524,6 +524,67 @@ export interface TeamInvitationData {
   expiryDays: number;
 }
 
+// ─── Admin / SME Addition Email ──────────────────────────────────────────────
+
+export interface AdminAdditionData {
+  recipientName: string;
+  addedByName: string;
+  role: string;
+  dashboardUrl: string;
+  loginUrl: string;
+}
+
+export function generateAdminAdditionEmail(data: AdminAdditionData): string {
+  const content = `
+    <div class="email-body">
+      <h2 class="email-title">You've Been Added as ${data.role} 🛡️</h2>
+
+      <p class="email-text">
+        Hi <span class="highlight">${data.recipientName}</span>,
+      </p>
+
+      <p class="email-text">
+        <strong>${data.addedByName}</strong> has granted you <strong>${data.role}</strong>
+        access on the Corecycle platform.
+      </p>
+
+      <div class="email-info-box">
+        <p class="email-text" style="margin: 0;">
+          <strong>Your New Role:</strong> ${data.role}<br>
+          You now have elevated permissions to manage users, courses, and platform settings.
+        </p>
+      </div>
+
+      <p class="email-text">
+        As a ${data.role}, you can:
+      </p>
+      <ul class="email-text">
+        <li>Manage user accounts and permissions</li>
+        <li>Allocate courses to users and organisations</li>
+        <li>Access reports and compliance data</li>
+        <li>Oversee training programmes</li>
+      </ul>
+
+      <div style="text-align: center;">
+        <a href="${data.dashboardUrl}" class="email-button">
+          Go to Dashboard
+        </a>
+      </div>
+
+      <p class="email-text">
+        If you believe this was done in error, please contact the platform administrator immediately.
+      </p>
+
+      <p class="email-text">
+        Best regards,<br>
+        <strong>The Corecycle Team</strong>
+      </p>
+    </div>
+  `;
+
+  return wrapTemplate(content);
+}
+
 export function generateTeamInvitationEmail(data: TeamInvitationData): string {
   const content = `
     <div class="email-body">

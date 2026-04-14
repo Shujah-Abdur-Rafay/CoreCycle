@@ -1,123 +1,139 @@
-const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY;
-const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
-const FROM_EMAIL = 'noreply@corecycle.com';
-const FROM_NAME = 'Corecycle LMS';
+// ─── Email Service — transport via Supabase RPC (pg_net → Resend) ─────────────
+// No Edge Function or direct browser fetch required — zero CORS issues.
+// The API key lives in Supabase Vault (Dashboard → Secrets → RESEND_API_KEY).
 
-interface EmailOptions {
+import { supabase } from '@/integrations/supabase/client';
+
+// ─── In-memory email log (session-scoped, last 100 entries) ──────────────────
+
+interface EmailLogEntry {
+  id: string;
+  to: string | string[];
+  subject: string;
+  success: boolean;
+  error?: string;
+  timestamp: Date;
+}
+
+const emailLog: EmailLogEntry[] = [];
+
+export function getEmailLog(): EmailLogEntry[] {
+  return [...emailLog];
+}
+
+function logEmail(entry: EmailLogEntry) {
+  emailLog.unshift(entry);
+  if (emailLog.length > 100) emailLog.pop();
+  const status = entry.success ? '✓' : '✗';
+  console.log(
+    `[EmailService] ${status} ${entry.subject} → ${Array.isArray(entry.to) ? entry.to.join(', ') : entry.to}`
+  );
+  if (!entry.success) console.error(`[EmailService] Error: ${entry.error}`);
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface EmailOptions {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
 }
 
-interface EmailResult {
+export interface EmailResult {
   success: boolean;
   messageId?: string;
   error?: string;
   timestamp: Date;
 }
 
+// ─── EmailService ─────────────────────────────────────────────────────────────
+
 class EmailService {
+  /**
+   * Send a single email via the send_email Postgres RPC (pg_net → Resend).
+   * Retries up to 3 times with exponential backoff on transient failures.
+   */
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
-    const { to, subject, html, text } = options;
-    const recipients = Array.isArray(to) ? to : [to];
+    const { to, subject, html } = options;
+    // RPC accepts one recipient — if array supplied take the first address
+    const recipient = Array.isArray(to) ? to[0] : to;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        const response = await fetch(BREVO_API_URL, {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'api-key': BREVO_API_KEY,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            sender: { name: FROM_NAME, email: FROM_EMAIL },
-            to: recipients.map(email => ({ email })),
-            subject,
-            htmlContent: html,
-            textContent: text || this.stripHtml(html),
-          }),
+        const { data, error } = await supabase.rpc('send_email', {
+          recipient,
+          subject,
+          html_body: html,
         });
 
-        if (!response.ok) {
-          const error = await response.text();
-          throw new Error(`Brevo API error: ${error}`);
+        if (error) throw new Error(error.message);
+
+        // The RPC returns { success: boolean, error?: string, request_id?: number }
+        if (data && data.success === false) {
+          throw new Error(data.error ?? 'Unknown error from send_email RPC');
         }
 
-        const result = await response.json();
-        console.log(`[EmailService] Email sent to ${recipients.join(', ')}`);
-        
-        return {
+        const entry: EmailLogEntry = {
+          id: String(data?.request_id ?? crypto.randomUUID()),
+          to,
+          subject,
           success: true,
-          messageId: result.messageId,
           timestamp: new Date(),
         };
-      } catch (error) {
-        console.error(`[EmailService] Attempt ${attempt} failed:`, error);
+        logEmail(entry);
+
+        return { success: true, messageId: String(data?.request_id ?? ''), timestamp: new Date() };
+      } catch (err: any) {
         if (attempt === 3) {
-          return {
+          const entry: EmailLogEntry = {
+            id: crypto.randomUUID(),
+            to,
+            subject,
             success: false,
-            error: (error as Error).message,
+            error: err.message,
             timestamp: new Date(),
           };
+          logEmail(entry);
+          return { success: false, error: err.message, timestamp: new Date() };
         }
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        // Exponential backoff before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
       }
     }
 
-    return {
-      success: false,
-      error: 'All retry attempts failed',
-      timestamp: new Date(),
-    };
+    return { success: false, error: 'All retry attempts failed', timestamp: new Date() };
   }
 
-  async sendBulkEmails(emails: EmailOptions[]): Promise<EmailResult[]> {
+  /**
+   * Send multiple emails sequentially with optional delay between sends.
+   */
+  async sendBulkEmails(emails: EmailOptions[], delayMs = 200): Promise<EmailResult[]> {
     const results: EmailResult[] = [];
     for (const email of emails) {
-      const result = await this.sendEmail(email);
-      results.push(result);
-      await new Promise(resolve => setTimeout(resolve, 200));
+      results.push(await this.sendEmail(email));
+      if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
     }
     return results;
   }
 
-  private stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-  }
-
-  async verifyConnection(): Promise<boolean> {
-    try {
-      const response = await fetch('https://api.brevo.com/v3/account', {
-        headers: {
-          'accept': 'application/json',
-          'api-key': BREVO_API_KEY,
-        },
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }
-
   getStatus() {
     return {
-      configured: !!BREVO_API_KEY,
-      provider: 'Brevo',
-      from: FROM_EMAIL,
+      configured: true,
+      provider: 'Resend (via pg_net RPC)',
+      from: 'noreply@corecycle.com',
     };
   }
 }
 
 export const emailService = new EmailService();
 
-export async function sendEmail(to: string | string[], subject: string, html: string): Promise<EmailResult> {
+export async function sendEmail(
+  to: string | string[],
+  subject: string,
+  html: string
+): Promise<EmailResult> {
   return emailService.sendEmail({ to, subject, html });
-}
-
-export async function verifyEmailService(): Promise<boolean> {
-  return emailService.verifyConnection();
 }
 
 export function getEmailServiceStatus() {

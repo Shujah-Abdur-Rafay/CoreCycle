@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole, AppRole } from './useUserRole';
+import { sendAccountApprovalEmail, sendAdminAdditionEmail } from '@/lib/emailWorkflows';
 
 export interface UserWithRole {
   id: string;
@@ -64,6 +65,16 @@ export function useAdminUsers() {
     }
   };
 
+  const roleLabels: Record<AppRole, string> = {
+    super_admin: 'Super Admin',
+    producer_admin: 'Producer Admin',
+    municipality_admin: 'Municipality Admin',
+    sme_admin: 'SME Admin',
+    learner: 'Learner',
+  };
+
+  const adminRoles: AppRole[] = ['super_admin', 'producer_admin', 'municipality_admin', 'sme_admin'];
+
   const updateUserRole = async (userId: string, role: AppRole) => {
     const { error } = await supabase
       .from('user_roles')
@@ -71,27 +82,52 @@ export function useAdminUsers() {
       .eq('user_id', userId);
 
     if (error) throw error;
+
+    // Send admin addition email when promoted to an admin role
+    if (adminRoles.includes(role)) {
+      const target = users.find(u => u.user_id === userId);
+      if (target?.email) {
+        sendAdminAdditionEmail({
+          email: target.email,
+          recipientName: target.full_name || target.email,
+          addedByName: 'Admin',
+          role: roleLabels[role],
+        }).catch(console.error);
+      }
+    }
+
     await fetchUsers();
   };
 
   const approveUser = async (userId: string, approved: boolean) => {
     const { error } = await supabase
       .from('user_roles')
-      .update({ 
-        is_approved: approved, 
+      .update({
+        is_approved: approved,
         approved_at: approved ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId);
 
     if (error) throw error;
+
+    // Send approval email when account is approved
+    if (approved) {
+      const target = users.find(u => u.user_id === userId);
+      if (target?.email) {
+        sendAccountApprovalEmail({
+          email: target.email,
+          userName: target.full_name || target.email,
+          role: roleLabels[target.role] || target.role,
+        }).catch(console.error);
+      }
+    }
+
     await fetchUsers();
   };
 
   useEffect(() => {
-    if (isSuperAdmin) {
-      fetchUsers();
-    }
+    fetchUsers();
   }, [isSuperAdmin]);
 
   return {

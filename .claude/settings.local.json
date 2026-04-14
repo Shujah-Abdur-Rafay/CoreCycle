@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -E \"\\\\.tsx$\")",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npx supabase:*)",
+      "Bash(winget install:*)",
+      "Bash(scoop install:*)",
+      "Bash(choco install:*)"
     ]
   }
 }

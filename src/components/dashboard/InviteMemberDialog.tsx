@@ -11,9 +11,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Copy, Check, UserPlus, Link as LinkIcon } from "lucide-react";
+import { Mail, Copy, Check, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { sendTeamInvitationEmail } from "@/lib/emailWorkflows";
 
 interface InviteMemberDialogProps {
   children?: React.ReactNode;
@@ -22,8 +23,10 @@ interface InviteMemberDialogProps {
 export function InviteMemberDialog({ children }: InviteMemberDialogProps) {
   const { profile } = useAuth();
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [copied, setCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const inviteLink = `${window.location.origin}/auth?invite=${profile?.sme_id || 'team'}`;
 
@@ -33,28 +36,43 @@ export function InviteMemberDialog({ children }: InviteMemberDialogProps) {
       setCopied(true);
       toast.success("Invite link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy link");
     }
   };
 
-  const handleSendInvite = (e: React.FormEvent) => {
+  const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       toast.error("Please enter an email address");
       return;
     }
 
-    // Since we don't have a backend email service yet, 
-    // we'll use a mailto link as a fallback or just simulate it.
-    const subject = encodeURIComponent("Invitation to join Corecycle Training");
-    const body = encodeURIComponent(`Hello,\n\nYou have been invited to join the training program at ${profile?.company_name || 'Corecycle'}.\n\nPlease use the following link to create your account:\n\n${inviteLink}\n\nRegards,\nTeam ${profile?.company_name || 'Corecycle'}`);
-    
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-    
-    toast.success(`Invite draft created for ${email}`);
-    setEmail("");
-    setIsOpen(false);
+    setIsSending(true);
+    try {
+      const result = await sendTeamInvitationEmail({
+        email,
+        inviteeName: name || email,
+        inviterName: profile?.full_name || 'Your Administrator',
+        companyName: profile?.company_name || 'Corecycle',
+        role: 'Learner',
+        inviteCode: profile?.sme_id || 'team',
+        expiryDays: 7,
+      });
+
+      if (result.success) {
+        toast.success(`Invitation sent to ${email}`);
+        setEmail("");
+        setName("");
+        setIsOpen(false);
+      } else {
+        toast.error(`Failed to send invite: ${result.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      toast.error("Failed to send invitation email");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -74,23 +92,22 @@ export function InviteMemberDialog({ children }: InviteMemberDialogProps) {
             Invite Team Member
           </DialogTitle>
           <DialogDescription>
-            Share this link with your staff or send an email invitation.
+            Share this link with your staff or send an email invitation directly.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
+          {/* Invite link */}
           <div className="space-y-2">
             <Label htmlFor="link">Invite Link</Label>
             <div className="flex items-center space-x-2">
-              <div className="grid flex-1 gap-2">
-                <Input
-                  id="link"
-                  defaultValue={inviteLink}
-                  readOnly
-                  className="h-9 text-xs font-mono bg-muted"
-                />
-              </div>
-              <Button size="sm" className="px-3" onClick={copyToClipboard}>
+              <Input
+                id="link"
+                defaultValue={inviteLink}
+                readOnly
+                className="h-9 text-xs font-mono bg-muted"
+              />
+              <Button size="sm" className="px-3 shrink-0" onClick={copyToClipboard}>
                 <span className="sr-only">Copy</span>
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -109,12 +126,21 @@ export function InviteMemberDialog({ children }: InviteMemberDialogProps) {
           </div>
 
           <form onSubmit={handleSendInvite} className="space-y-4">
-            <div className="grid flex-1 gap-2">
-              <Label htmlFor="email">Email Address</Label>
+            <div className="space-y-2">
+              <Label htmlFor="invite-name">Name (optional)</Label>
+              <Input
+                id="invite-name"
+                placeholder="Staff member's name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email Address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="email"
+                  id="invite-email"
                   placeholder="staff@company.com"
                   className="pl-10 h-10"
                   type="email"
@@ -123,15 +149,30 @@ export function InviteMemberDialog({ children }: InviteMemberDialogProps) {
                 />
               </div>
             </div>
-            <Button type="submit" variant="forest" className="w-full">
-              Send Email Invite
+            <Button
+              type="submit"
+              variant="forest"
+              className="w-full"
+              disabled={isSending}
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Email Invite
+                </>
+              )}
             </Button>
           </form>
         </div>
-        
+
         <DialogFooter className="sm:justify-start">
           <p className="text-[10px] text-muted-foreground">
-            Invited members will automatically be linked to your organization system upon registration.
+            Invited members will automatically be linked to your organisation upon registration.
           </p>
         </DialogFooter>
       </DialogContent>
