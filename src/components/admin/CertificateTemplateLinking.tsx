@@ -191,11 +191,16 @@ export function CertificateTemplateLinking() {
                     <>
                       <Separator className="mt-4 mb-4" />
                       <div className="flex items-center gap-4">
-                        <CertificateCard
-                          template={previewTpl}
-                          preview
-                          className="w-24 h-24 shrink-0 shadow-sm"
-                        />
+                        {/* Render at 320px then scale down 0.3× so text fits without wrapping */}
+                        <div className="shrink-0 overflow-hidden rounded-2xl shadow-sm" style={{ width: 96, height: 96 }}>
+                          <div style={{ width: 320, height: 320, transform: 'scale(0.3)', transformOrigin: 'top left' }}>
+                            <CertificateCard
+                              template={previewTpl}
+                              preview={false}
+                              className="w-[320px] h-[320px]"
+                            />
+                          </div>
+                        </div>
                         <div className="text-xs text-muted-foreground space-y-0.5">
                           <p className="font-medium text-foreground">{previewTpl.name}</p>
                           <p>{previewTpl.header_text}</p>
