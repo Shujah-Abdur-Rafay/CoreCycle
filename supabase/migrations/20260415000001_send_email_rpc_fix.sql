@@ -1,4 +1,4 @@
--- ─────────────────────────────────────────────────────────────────────────────
+﻿-- ─────────────────────────────────────────────────────────────────────────────
 -- Fix: replace vault lookup with current_setting (works on all Supabase tiers)
 -- Run the two lines below FIRST in SQL Editor, then this whole file.
 --
@@ -42,7 +42,7 @@ begin
   select net.http_post(
     url     := 'https://api.resend.com/emails',
     body    := jsonb_build_object(
-      'from',    'Corecycle LMS <onboarding@resend.dev>',
+      'from',    'OntreCycle LMS <onboarding@resend.dev>',
       'to',      jsonb_build_array(recipient),
       'subject', subject,
       'html',    html_body

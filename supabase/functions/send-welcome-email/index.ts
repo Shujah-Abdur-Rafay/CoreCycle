@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+﻿import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY')!
@@ -26,18 +26,18 @@ serve(async (req) => {
       <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f4f4f4">
         <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
           <div style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);padding:40px 20px;text-align:center">
-            <h1 style="color:#fff;margin:0;font-size:28px">Welcome to Corecycle!</h1>
+            <h1 style="color:#fff;margin:0;font-size:28px">Welcome to OntreCycle!</h1>
           </div>
           <div style="padding:40px 30px">
             <p style="font-size:16px;color:#333;line-height:1.6">Hi ${profile?.first_name || 'there'},</p>
-            <p style="font-size:16px;color:#333;line-height:1.6">Welcome to Corecycle LMS! Your account has been created successfully.</p>
+            <p style="font-size:16px;color:#333;line-height:1.6">Welcome to OntreCycle LMS! Your account has been created successfully.</p>
             <p style="font-size:16px;color:#333;line-height:1.6">You can now log in and start exploring our training courses.</p>
             <div style="text-align:center;margin:30px 0">
               <a href="${Deno.env.get('BASE_URL')}/login" style="display:inline-block;background:#10b981;color:#fff;padding:12px 30px;text-decoration:none;border-radius:6px;font-weight:600">Login Now</a>
             </div>
           </div>
           <div style="background:#f9fafb;padding:20px;text-align:center;font-size:12px;color:#6b7280">
-            <p style="margin:0">© ${new Date().getFullYear()} Corecycle. All rights reserved.</p>
+            <p style="margin:0">© ${new Date().getFullYear()} OntreCycle. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -52,9 +52,9 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: 'Corecycle LMS', email: 'noreply@corecycle.com' },
+        sender: { name: 'OntreCycle LMS', email: 'noreply@OntreCycle.com' },
         to: [{ email: record.email }],
-        subject: 'Welcome to Corecycle!',
+        subject: 'Welcome to OntreCycle!',
         htmlContent: html,
       }),
     })

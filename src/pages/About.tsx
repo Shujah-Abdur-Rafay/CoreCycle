@@ -35,7 +35,7 @@ const About = () => {
                 <Recycle className="h-8 w-8 text-leaf" />
               </div>
               <h1 className="text-4xl lg:text-6xl font-display font-bold text-foreground mb-6">
-                About Corecycle
+                About OntreCycle
               </h1>
               <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed">
                 We're on a mission to make Ontario's transition to Extended Producer Responsibility a success by training the people who make it work every day.
@@ -58,7 +58,7 @@ const About = () => {
                   Our Mission
                 </h2>
                 <p className="text-muted-foreground text-lg leading-relaxed mb-6">
-                  Corecycle—Recycling Learning Program Ontario—was founded with a simple belief: the success of Ontario's new recycling system depends on people, not just policy.
+                  OntreCycle—Recycling Learning Program Ontario—was founded with a simple belief: the success of Ontario's new recycling system depends on people, not just policy.
                 </p>
                 <p className="text-muted-foreground leading-relaxed mb-6">
                   Extended Producer Responsibility shifts financial responsibility to producers, but the day-to-day work of separating recyclables, reducing contamination, and maintaining clean streams still happens at businesses across the province.

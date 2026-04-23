@@ -54,7 +54,7 @@ export function InviteMemberDialog({ children }: InviteMemberDialogProps) {
         email,
         inviteeName: name || email,
         inviterName: profile?.full_name || 'Your Administrator',
-        companyName: profile?.company_name || 'Corecycle',
+        companyName: profile?.company_name || 'OntreCycle',
         role: 'Learner',
         inviteCode: profile?.sme_id || 'team',
         expiryDays: 7,

@@ -1,4 +1,4 @@
-// ─── Email Service — transport via Supabase RPC (pg_net → Resend) ─────────────
+﻿// ─── Email Service — transport via Supabase RPC (pg_net → Resend) ─────────────
 // No Edge Function or direct browser fetch required — zero CORS issues.
 // The API key lives in Supabase Vault (Dashboard → Secrets → RESEND_API_KEY).
 
@@ -121,7 +121,7 @@ class EmailService {
     return {
       configured: true,
       provider: 'Resend (via pg_net RPC)',
-      from: 'noreply@corecycle.com',
+      from: 'noreply@OntreCycle.com',
     };
   }
 }

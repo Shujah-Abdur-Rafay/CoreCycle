@@ -66,7 +66,7 @@ export const generateCertificatePdf = (data: CertificateData): void => {
   doc.setTextColor(...C.white);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('CoreCycle', W / 2, MARGIN + 14.5, { align: 'center' });
+  doc.text('OntreCycle', W / 2, MARGIN + 14.5, { align: 'center' });
 
   // ── 5. Subtitle strip ─────────────────────────────────────────────────────
   doc.setFillColor(...C.lightGreen);
@@ -151,7 +151,7 @@ export const generateCertificatePdf = (data: CertificateData): void => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(...C.mutedText);
-  doc.text('CoreCycle — Ontario EPR Training Program', 82.5, sigY + 10, { align: 'center' });
+  doc.text('OntreCycle — Ontario EPR Training Program', 82.5, sigY + 10, { align: 'center' });
 
   // Right signature block
   doc.setDrawColor(...C.mutedText);
@@ -175,7 +175,7 @@ export const generateCertificatePdf = (data: CertificateData): void => {
   doc.text(`Certificate No: ${certificateNumber}`, W / 2, H - MARGIN - 6, { align: 'center' });
 
   // ── 15. Decorative leaf icon (text-based) ─────────────────────────────────
-  // Place small "◆ CoreCycle ◆" watermark lightly in the background
+  // Place small "◆ OntreCycle ◆" watermark lightly in the background
   doc.setTextColor(220, 245, 228);  // very light green
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(60);
@@ -189,5 +189,5 @@ export const generateCertificatePdf = (data: CertificateData): void => {
   // ── Save ──────────────────────────────────────────────────────────────────
   const safeName = learnerName.replace(/\s+/g, '_');
   const safeCourse = courseTitle.replace(/\s+/g, '_').substring(0, 20);
-  doc.save(`CoreCycle_Certificate_${safeName}_${safeCourse}.pdf`);
+  doc.save(`OntreCycle_Certificate_${safeName}_${safeCourse}.pdf`);
 };

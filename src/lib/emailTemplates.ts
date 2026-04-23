@@ -1,4 +1,4 @@
-// ─── Email Template Base ─────────────────────────────────────────────────────
+﻿// ─── Email Template Base ─────────────────────────────────────────────────────
 
 const emailStyles = `
   body {
@@ -90,25 +90,25 @@ function wrapTemplate(content: string): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Corecycle</title>
+  <title>OntreCycle</title>
   <style>${emailStyles}</style>
 </head>
 <body>
   <div class="email-container">
     <div class="email-header">
-      <h1 class="email-logo">🌱 Corecycle</h1>
+      <h1 class="email-logo">🌱 OntreCycle</h1>
     </div>
     ${content}
     <div class="email-footer">
       <p class="email-footer-text">
-        <strong>Corecycle</strong> - Ontario Waste Diversion Academy
+        <strong>OntreCycle</strong> - Ontario Waste Diversion Academy
       </p>
       <p class="email-footer-text">
         <a href="{{unsubscribeUrl}}" class="email-footer-link">Unsubscribe</a> | 
         <a href="{{helpUrl}}" class="email-footer-link">Help Center</a>
       </p>
       <p class="email-footer-text">
-        © ${new Date().getFullYear()} Corecycle. All rights reserved.
+        © ${new Date().getFullYear()} OntreCycle. All rights reserved.
       </p>
     </div>
   </div>
@@ -129,14 +129,14 @@ export interface WelcomeEmailData {
 export function generateWelcomeEmail(data: WelcomeEmailData): string {
   const content = `
     <div class="email-body">
-      <h2 class="email-title">Welcome to Corecycle! 🎉</h2>
+      <h2 class="email-title">Welcome to OntreCycle! 🎉</h2>
       
       <p class="email-text">
         Hi <span class="highlight">${data.userName}</span>,
       </p>
       
       <p class="email-text">
-        Thank you for joining Corecycle, Ontario's premier waste diversion training platform. 
+        Thank you for joining OntreCycle, Ontario's premier waste diversion training platform. 
         We're excited to have you on board!
       </p>
       
@@ -176,7 +176,7 @@ export function generateWelcomeEmail(data: WelcomeEmailData): string {
       
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;
@@ -207,7 +207,7 @@ export function generateRegistrationConfirmationEmail(
       </p>
       
       <p class="email-text">
-        Your registration with Corecycle has been successfully confirmed!
+        Your registration with OntreCycle has been successfully confirmed!
       </p>
       
       <div class="email-info-box">
@@ -251,7 +251,7 @@ export function generateRegistrationConfirmationEmail(
       
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;
@@ -278,7 +278,7 @@ export function generateAccountApprovalEmail(data: AccountApprovalData): string 
       </p>
       
       <p class="email-text">
-        Great news! Your Corecycle account has been approved and is now fully active.
+        Great news! Your OntreCycle account has been approved and is now fully active.
       </p>
       
       <div class="email-info-box">
@@ -311,7 +311,7 @@ export function generateAccountApprovalEmail(data: AccountApprovalData): string 
       
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;
@@ -384,7 +384,7 @@ export function generateCourseAllocationEmail(data: CourseAllocationData): strin
       
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;
@@ -447,7 +447,7 @@ export function generateCourseCompletionEmail(data: CourseCompletionData): strin
       
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;
@@ -473,7 +473,7 @@ export function generatePasswordResetEmail(data: PasswordResetData): string {
       </p>
       
       <p class="email-text">
-        We received a request to reset your Corecycle account password.
+        We received a request to reset your OntreCycle account password.
       </p>
       
       <div style="text-align: center;">
@@ -490,7 +490,7 @@ export function generatePasswordResetEmail(data: PasswordResetData): string {
       <div class="email-info-box">
         <p class="email-text" style="margin: 0;">
           <strong>Security Tip:</strong> Never share your password with anyone. 
-          Corecycle will never ask for your password via email.
+          OntreCycle will never ask for your password via email.
         </p>
       </div>
       
@@ -505,7 +505,7 @@ export function generatePasswordResetEmail(data: PasswordResetData): string {
       
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;
@@ -545,7 +545,7 @@ export function generateAdminAdditionEmail(data: AdminAdditionData): string {
 
       <p class="email-text">
         <strong>${data.addedByName}</strong> has granted you <strong>${data.role}</strong>
-        access on the Corecycle platform.
+        access on the OntreCycle platform.
       </p>
 
       <div class="email-info-box">
@@ -577,7 +577,7 @@ export function generateAdminAdditionEmail(data: AdminAdditionData): string {
 
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;
@@ -596,7 +596,7 @@ export function generateTeamInvitationEmail(data: TeamInvitationData): string {
       
       <p class="email-text">
         <strong>${data.inviterName}</strong> has invited you to join 
-        <strong>${data.companyName}</strong> on Corecycle.
+        <strong>${data.companyName}</strong> on OntreCycle.
       </p>
       
       <div class="email-info-box">
@@ -618,15 +618,15 @@ export function generateTeamInvitationEmail(data: TeamInvitationData): string {
       </p>
       
       <p class="email-text">
-        <strong>About Corecycle:</strong><br>
-        Corecycle is Ontario's leading platform for waste diversion and recycling 
+        <strong>About OntreCycle:</strong><br>
+        OntreCycle is Ontario's leading platform for waste diversion and recycling 
         training. Access comprehensive courses on EPR regulations, compliance 
         requirements, and best practices.
       </p>
       
       <p class="email-text">
         Best regards,<br>
-        <strong>The Corecycle Team</strong>
+        <strong>The OntreCycle Team</strong>
       </p>
     </div>
   `;

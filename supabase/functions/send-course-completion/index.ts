@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+﻿import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY')!
@@ -63,7 +63,7 @@ serve(async (req) => {
             <p style="font-size:16px;color:#333;line-height:1.6">Keep up the great work!</p>
           </div>
           <div style="background:#f9fafb;padding:20px;text-align:center;font-size:12px;color:#6b7280">
-            <p style="margin:0">© ${new Date().getFullYear()} Corecycle. All rights reserved.</p>
+            <p style="margin:0">© ${new Date().getFullYear()} OntreCycle. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -78,7 +78,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: 'Corecycle LMS', email: 'noreply@corecycle.com' },
+        sender: { name: 'OntreCycle LMS', email: 'noreply@OntreCycle.com' },
         to: [{ email: profile.email }],
         subject: `Course Completed: ${course.title}`,
         htmlContent: html,

@@ -58,7 +58,7 @@ function SMEAdminSidebar() {
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-lg font-display font-bold text-foreground">
-                Corecycle
+                OntreCycle
               </span>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Shield className="h-3 w-3" /> SME Admin

@@ -1,8 +1,8 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+﻿import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM_EMAIL = 'noreply@corecycle.com';
-const FROM_NAME = 'Corecycle LMS';
+const FROM_EMAIL = 'noreply@OntreCycle.com';
+const FROM_NAME = 'OntreCycle LMS';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

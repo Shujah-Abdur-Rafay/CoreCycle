@@ -30,7 +30,7 @@ const features = [
   {
     icon: Shield,
     title: "How We Help",
-    description: "Discover how Corecycle helps you train staff, maintain audit-ready records, and reduce contamination risks through evidence-based training.",
+    description: "Discover how OntreCycle helps you train staff, maintain audit-ready records, and reduce contamination risks through evidence-based training.",
     href: "/learn/how-we-help",
     color: "forest",
   },
@@ -122,7 +122,7 @@ export function FeaturesSection() {
           <div className="grid lg:grid-cols-4 gap-8 items-center">
             <div className="lg:col-span-1">
               <h3 className="text-2xl font-display font-bold text-foreground mb-4">
-                Why Choose Corecycle?
+                Why Choose OntreCycle?
               </h3>
               <p className="text-muted-foreground">
                 Ontario's trusted platform for EPR training and compliance.

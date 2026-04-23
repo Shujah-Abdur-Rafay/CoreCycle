@@ -15,7 +15,7 @@ A comprehensive learning management system (LMS) for Ontario's recycling and was
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Shujah-Abdur-Rafay/CoreCycle.git
+   git clone https://github.com/Shujah-Abdur-Rafay/OntreCycle.git
    cd ontario-recycle-mentor
    ```
 

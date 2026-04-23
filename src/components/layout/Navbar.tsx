@@ -105,7 +105,7 @@ export function Navbar() {
             <span className={`text-xl font-display font-bold ${
               isHomePage ? "text-primary-foreground" : "text-foreground"
             }`}>
-              Corecycle
+              OntreCycle
             </span>
           </Link>
 

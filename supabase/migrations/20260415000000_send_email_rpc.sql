@@ -1,4 +1,4 @@
--- ─────────────────────────────────────────────────────────────────────────────
+﻿-- ─────────────────────────────────────────────────────────────────────────────
 -- send_email RPC — calls Resend API via pg_net (no Edge Function required)
 -- Prerequisites:
 --   1. Add secret named "RESEND_API_KEY" in Supabase Dashboard → Secrets
@@ -41,7 +41,7 @@ begin
   select extensions.http_post(
     url     := 'https://api.resend.com/emails',
     body    := jsonb_build_object(
-      'from',    'Corecycle LMS <noreply@corecycle.com>',
+      'from',    'OntreCycle LMS <noreply@OntreCycle.com>',
       'to',      jsonb_build_array(recipient),
       'subject', subject,
       'html',    html_body

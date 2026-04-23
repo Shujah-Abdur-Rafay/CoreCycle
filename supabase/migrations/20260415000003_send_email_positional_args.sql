@@ -1,4 +1,4 @@
--- Fix: use positional args + explicit casts for net.http_post
+﻿-- Fix: use positional args + explicit casts for net.http_post
 -- Named parameters caused type-inference failure on the url literal
 
 drop function if exists public.send_email(text, text, text);
@@ -29,7 +29,7 @@ begin
   select net.http_post(
     'https://api.resend.com/emails'::text,
     jsonb_build_object(
-      'from',    'Corecycle LMS <onboarding@resend.dev>',
+      'from',    'OntreCycle LMS <onboarding@resend.dev>',
       'to',      jsonb_build_array(recipient),
       'subject', subject,
       'html',    html_body

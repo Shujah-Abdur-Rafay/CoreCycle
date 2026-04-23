@@ -147,7 +147,7 @@ const Auth = () => {
             toast.error(error.message);
           }
         } else {
-          toast.success("Account created successfully! Welcome to Corecycle.");
+          toast.success("Account created successfully! Welcome to OntreCycle.");
           // Send welcome + registration confirmation emails
           const userName = `${formData.firstName} ${formData.lastName}`.trim();
           sendWelcomeEmail({ email: formData.email, userName }).catch(console.error);
@@ -191,7 +191,7 @@ const Auth = () => {
                 <div className="p-2 rounded-xl bg-primary">
                   <Recycle className="h-6 w-6 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-display font-bold text-foreground">Corecycle</span>
+                <span className="text-xl font-display font-bold text-foreground">OntreCycle</span>
               </Link>
               
               <h1 className="text-3xl font-display font-bold text-foreground mb-2">

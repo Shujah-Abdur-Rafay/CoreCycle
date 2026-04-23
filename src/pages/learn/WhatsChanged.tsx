@@ -283,7 +283,7 @@ const WhatsChanged = () => {
                 </div>
 
                 <p className="leading-relaxed">
-                  This is why training, proper separation, and contamination reduction remain critical—and why Corecycle exists to help Ontario SMEs succeed in this new landscape.
+                  This is why training, proper separation, and contamination reduction remain critical—and why OntreCycle exists to help Ontario SMEs succeed in this new landscape.
                 </p>
               </div>
             </motion.div>

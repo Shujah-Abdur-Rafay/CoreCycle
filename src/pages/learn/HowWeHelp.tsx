@@ -72,10 +72,10 @@ const HowWeHelp = () => {
                 Learn
               </span>
               <h1 className="text-4xl lg:text-6xl font-display font-bold text-foreground mb-6">
-                How Corecycle Helps Your Business
+                How OntreCycle Helps Your Business
               </h1>
               <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed">
-                From training to certification, from evidence collection to audit reporting—Corecycle provides everything Ontario businesses need to succeed in the new EPR landscape.
+                From training to certification, from evidence collection to audit reporting—OntreCycle provides everything Ontario businesses need to succeed in the new EPR landscape.
               </p>
             </motion.div>
           </div>
@@ -193,7 +193,7 @@ const HowWeHelp = () => {
                   Benefits for Your Business
                 </h2>
                 <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                  Corecycle isn't just about compliance—it's about building a culture of environmental responsibility that benefits your business, your community, and the planet.
+                  OntreCycle isn't just about compliance—it's about building a culture of environmental responsibility that benefits your business, your community, and the planet.
                 </p>
                 
                 <div className="grid sm:grid-cols-2 gap-4 mb-8">

@@ -56,7 +56,7 @@ function DashboardSidebar() {
           </div>
           {!collapsed && (
             <span className="text-lg font-display font-bold text-foreground">
-              Corecycle
+              OntreCycle
             </span>
           )}
         </Link>

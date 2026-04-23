@@ -1,4 +1,4 @@
--- ─────────────────────────────────────────────────────────────────────────────
+﻿-- ─────────────────────────────────────────────────────────────────────────────
 -- send_email via pg_net — stores API key in app_secrets table (no vault/ALTER needed)
 -- Run entirely from Supabase Dashboard → SQL Editor
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ begin
   select net.http_post(
     url     := 'https://api.resend.com/emails',
     body    := jsonb_build_object(
-      'from',    'Corecycle LMS <onboarding@resend.dev>',
+      'from',    'OntreCycle LMS <onboarding@resend.dev>',
       'to',      jsonb_build_array(recipient),
       'subject', subject,
       'html',    html_body

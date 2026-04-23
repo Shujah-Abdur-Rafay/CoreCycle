@@ -41,7 +41,7 @@ export function exportReportAsPdf(
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("CoreCycle — Ontario EPR Training Platform", 14, 9);
+  doc.text("OntreCycle — Ontario EPR Training Platform", 14, 9);
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
@@ -90,7 +90,7 @@ export function exportReportAsPdf(
       doc.setTextColor(150, 150, 150);
       doc.setFont("helvetica", "normal");
 
-      doc.text("CoreCycle — Confidential", 14, pageHeight - 5);
+      doc.text("OntreCycle — Confidential", 14, pageHeight - 5);
       doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - 14, pageHeight - 5, { align: "right" });
 
       // Thin footer rule

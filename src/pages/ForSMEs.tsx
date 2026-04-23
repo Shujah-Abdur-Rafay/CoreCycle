@@ -172,13 +172,13 @@ const ForSMEs = () => {
               duration: 0.6
             }}>
                 <span className="inline-block px-4 py-1.5 rounded-full bg-forest/10 text-forest text-sm font-medium mb-4">
-                  Why Choose Corecycle
+                  Why Choose OntreCycle
                 </span>
                 <h2 className="text-3xl lg:text-4xl font-display font-bold text-foreground mb-6">
                   Benefits for Your Business
                 </h2>
                 <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                  Corecycle helps Ontario businesses stay compliant, reduce waste management costs, and demonstrate environmental leadership.
+                  OntreCycle helps Ontario businesses stay compliant, reduce waste management costs, and demonstrate environmental leadership.
                 </p>
                 
                 <div className="space-y-4">
@@ -214,7 +214,7 @@ const ForSMEs = () => {
                     </div>
                     
                     <p className="text-muted-foreground mb-6 leading-relaxed">
-                      Every audit asks the same questions: Who was trained? When? On what topics? What version of the training did they complete? Corecycle answers all of these automatically.
+                      Every audit asks the same questions: Who was trained? When? On what topics? What version of the training did they complete? OntreCycle answers all of these automatically.
                     </p>
 
                     <div className="p-4 rounded-xl bg-secondary">
@@ -251,7 +251,7 @@ const ForSMEs = () => {
                 Ready to Get Started?
               </h2>
               <p className="text-muted-foreground text-lg mb-8">
-                Join hundreds of Ontario businesses already using Corecycle for their recycling training and compliance needs.
+                Join hundreds of Ontario businesses already using OntreCycle for their recycling training and compliance needs.
               </p>
               <Link to="/auth?mode=register&type=sme">
                 <Button variant="forest" size="xl">

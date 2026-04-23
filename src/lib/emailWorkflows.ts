@@ -1,4 +1,4 @@
-import emailService from './emailService';
+﻿import emailService from './emailService';
 import {
   generateWelcomeEmail,
   generateRegistrationConfirmationEmail,
@@ -53,7 +53,7 @@ export async function sendWelcomeEmail(data: {
 
   return emailService.sendEmail({
     to: data.email,
-    subject: 'Welcome to Corecycle! 🎉',
+    subject: 'Welcome to OntreCycle! 🎉',
     html,
   });
 }
@@ -81,7 +81,7 @@ export async function sendRegistrationConfirmationEmail(data: {
 
   return emailService.sendEmail({
     to: data.email,
-    subject: 'Registration Confirmed - Corecycle',
+    subject: 'Registration Confirmed - OntreCycle',
     html,
   });
 }
@@ -188,7 +188,7 @@ export async function sendPasswordResetEmail(data: {
 
   return emailService.sendEmail({
     to: data.email,
-    subject: 'Password Reset Request - Corecycle',
+    subject: 'Password Reset Request - OntreCycle',
     html,
   });
 }
@@ -219,7 +219,7 @@ export async function sendTeamInvitationEmail(data: {
 
   return emailService.sendEmail({
     to: data.email,
-    subject: `You're invited to join ${data.companyName} on Corecycle`,
+    subject: `You're invited to join ${data.companyName} on OntreCycle`,
     html,
   });
 }
@@ -245,7 +245,7 @@ export async function sendAdminAdditionEmail(data: {
 
   return emailService.sendEmail({
     to: data.email,
-    subject: `You've been added as ${data.role} on Corecycle`,
+    subject: `You've been added as ${data.role} on OntreCycle`,
     html,
   });
 }

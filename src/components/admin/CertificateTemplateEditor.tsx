@@ -167,7 +167,7 @@ export function CertificateTemplateEditor({
             <div className="space-y-1.5">
               <Label>Provider / Organisation Name</Label>
               <Input
-                placeholder="e.g. CoreCycle Ontario"
+                placeholder="e.g. OntreCycle Ontario"
                 value={form.provider_name || ''}
                 onChange={e => setForm(prev => ({ ...prev, provider_name: e.target.value }))}
               />
