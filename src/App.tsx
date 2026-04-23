@@ -27,6 +27,7 @@ import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
 import AIQuizManagement from "./pages/admin/AIQuizManagement";
 import ComplianceDashboard from "./pages/admin/ComplianceDashboard";
+import CertificateManagement from "./pages/admin/CertificateManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -125,6 +126,14 @@ const App = () => (
                   element={
                     <ProtectedRoute allowedRoles={["super_admin"]} redirectTo="/dashboard">
                       <ComplianceDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/certificates"
+                  element={
+                    <ProtectedRoute allowedRoles={["super_admin"]} redirectTo="/dashboard">
+                      <CertificateManagement />
                     </ProtectedRoute>
                   }
                 />

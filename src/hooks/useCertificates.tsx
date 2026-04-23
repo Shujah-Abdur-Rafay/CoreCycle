@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { CertificateTemplate } from '@/hooks/useCertificateTemplates';
 
 export interface Certificate {
   id: string;
@@ -100,6 +101,28 @@ export function useCertificates() {
     }
   };
 
+  const getTemplateForCourse = async (courseId: string): Promise<CertificateTemplate | null> => {
+    try {
+      const { data: mapping } = await supabase
+        .from('course_certificate_map')
+        .select('certificate_template_id')
+        .eq('course_id', courseId)
+        .maybeSingle();
+
+      if (!mapping) return null;
+
+      const { data: template } = await supabase
+        .from('certificate_templates')
+        .select('*')
+        .eq('id', mapping.certificate_template_id)
+        .single();
+
+      return (template as CertificateTemplate) || null;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchCertificates();
   }, [user]);
@@ -109,6 +132,7 @@ export function useCertificates() {
     loading,
     error,
     createCertificate,
+    getTemplateForCourse,
     refetch: fetchCertificates,
   };
 }

@@ -50,9 +50,10 @@ const superAdminMenuItems = [
   { title: "User Management",   url: "/admin/users",        icon: Users },
   { title: "SME Management",    url: "/admin/smes",         icon: Building2 },
   { title: "Courses",           url: "/admin/courses",      icon: GraduationCap },
-  { title: "AI Quiz Generator", url: "/admin/ai-quizzes",   icon: Sparkles },
-  { title: "Compliance",        url: "/admin/compliance",   icon: ShieldCheck },
-  { title: "Reports",           url: "/admin/reports",      icon: FileText },
+  { title: "AI Quiz Generator", url: "/admin/ai-quizzes",      icon: Sparkles },
+  { title: "Certificates",      url: "/admin/certificates",   icon: Award },
+  { title: "Compliance",        url: "/admin/compliance",     icon: ShieldCheck },
+  { title: "Reports",           url: "/admin/reports",        icon: FileText },
 ];
 
 // Accessible nav items per simulated role (what that role would see)
