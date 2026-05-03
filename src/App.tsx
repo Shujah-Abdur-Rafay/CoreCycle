@@ -28,6 +28,9 @@ import Admin from "./pages/Admin";
 import AIQuizManagement from "./pages/admin/AIQuizManagement";
 import ComplianceDashboard from "./pages/admin/ComplianceDashboard";
 import CertificateManagement from "./pages/admin/CertificateManagement";
+import ConsentScreen from "./pages/ConsentScreen";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,14 +54,17 @@ const App = () => (
                 <Route path="/for-smes" element={<ForSMEs />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/consent" element={<ConsentScreen />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
-                {/* ── Authenticated learner routes ── */}
-                <Route path="/course/:courseId" element={<CoursePlayer />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/my-courses" element={<MyCourses />} />
-                <Route path="/certificates" element={<Certificates />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/settings" element={<Settings />} />
+                {/* ── Authenticated learner routes (consent enforced) ── */}
+                <Route path="/course/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
+                <Route path="/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
                 {/* ── SME Admin only ── */}
                 <Route

@@ -20,7 +20,7 @@ import {
 
 // ─── Base URLs (from environment) ────────────────────────────────────────────
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://ontrecycle.com';
 const HELP_URL = `${BASE_URL}/help`;
 const UNSUBSCRIBE_URL = `${BASE_URL}/unsubscribe`;
 

@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Loader2, Save, X, Upload, Image } from 'lucide-react';
-import { useCertificateTemplates, CertificateTemplate, CertificateTemplateInput, StyleConfig } from '@/hooks/useCertificateTemplates';
+import { useCertificateTemplates, CertificateTemplate, CertificateTemplateInput, StyleConfig, AspectRatioKey } from '@/hooks/useCertificateTemplates';
 import { CertificateCard } from '@/components/certificate/CertificateCard';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +18,20 @@ interface CertificateTemplateEditorProps {
   onSaved: () => void;
   onCancel: () => void;
 }
+
+const ASPECT_OPTIONS: { key: AspectRatioKey; label: string; title: string; w: number; h: number }[] = [
+  { key: 'landscape',  label: '4:3',  title: 'Landscape',  w: 40, h: 30 },
+  { key: 'widescreen', label: '16:9', title: 'Widescreen', w: 48, h: 27 },
+  { key: 'square',     label: '1:1',  title: 'Square',     w: 34, h: 34 },
+  { key: 'portrait',   label: '3:4',  title: 'Portrait',   w: 30, h: 40 },
+];
+
+const ASPECT_LABEL: Record<AspectRatioKey, string> = {
+  landscape:  'Landscape 4:3',
+  widescreen: 'Widescreen 16:9',
+  square:     'Square 1:1',
+  portrait:   'Portrait 3:4',
+};
 
 const defaultStyle: StyleConfig = {
   fontFamily: 'inherit',
@@ -29,6 +43,7 @@ const defaultStyle: StyleConfig = {
   showBorder: true,
   borderColor: '#16a34a',
   showWatermark: true,
+  aspectRatio: 'landscape',
 };
 
 const defaultInput: CertificateTemplateInput = {
@@ -266,6 +281,44 @@ export function CertificateTemplateEditor({
             <CardTitle className="text-base">Style</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Aspect Ratio */}
+            <div className="space-y-2">
+              <Label>Aspect Ratio</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {ASPECT_OPTIONS.map(({ key, label, title, w, h }) => {
+                  const active = (form.style_config.aspectRatio ?? 'landscape') === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setStyle('aspectRatio', key)}
+                      className={`flex flex-col items-center gap-1.5 rounded-lg border-2 p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        active
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-muted-foreground/50'
+                      }`}
+                    >
+                      {/* Shape thumbnail */}
+                      <div className="flex items-center justify-center" style={{ width: 48, height: 40 }}>
+                        <div
+                          className={`rounded-sm ${active ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                          style={{ width: w, height: h }}
+                        />
+                      </div>
+                      <span className={`text-[10px] font-semibold leading-none ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {title}
+                      </span>
+                      <span className={`text-[9px] leading-none ${active ? 'text-primary/70' : 'text-muted-foreground/60'}`}>
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Separator />
+
             <div className="space-y-1.5">
               <Label>Accent / Border Colour</Label>
               <div className="flex items-center gap-3">
@@ -379,7 +432,9 @@ export function CertificateTemplateEditor({
       <div className="space-y-4 lg:sticky lg:top-24 self-start">
         <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Live Preview</p>
         <CertificateCard template={previewTemplate} preview={false} className="w-full max-w-sm mx-auto shadow-xl" />
-        <p className="text-xs text-center text-muted-foreground">Square 1:1 aspect ratio · actual learner data replaces placeholders</p>
+        <p className="text-xs text-center text-muted-foreground">
+          {ASPECT_LABEL[form.style_config.aspectRatio ?? 'landscape']} · actual learner data replaces placeholders
+        </p>
       </div>
     </div>
   );

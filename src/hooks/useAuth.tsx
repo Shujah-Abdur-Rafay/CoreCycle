@@ -20,10 +20,15 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  consentGiven: boolean | null;
+  consentLoading: boolean;
   signUp: (email: string, password: string, metadata?: { full_name?: string; user_type?: string; company_name?: string; sme_id?: string; industry_sector?: string }) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  submitConsent: () => Promise<{ error: Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,6 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [consentGiven, setConsentGiven] = useState<boolean | null>(null);
+  // Start as true so ProtectedRoute always waits for the first fetch — avoids a
+  // race window where consentGiven is null but consentLoading is already false.
+  const [consentLoading, setConsentLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -46,20 +55,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchConsent = async (userId: string) => {
+    setConsentLoading(true);
+    const { data, error } = await supabase
+      .from('user_consent')
+      .select('consent_given')
+      .eq('user_id', userId)
+      .single();
+
+    if (!error && data) {
+      setConsentGiven(data.consent_given);
+    } else {
+      // Row may not exist yet for users who signed up before this migration.
+      // Treat missing row as consent not yet given.
+      setConsentGiven(false);
+    }
+    setConsentLoading(false);
+  };
+
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Defer profile fetch with setTimeout to avoid deadlock
         if (session?.user) {
+          setConsentLoading(true); // block renders until fetchConsent resolves
           setTimeout(() => {
             fetchProfile(session.user.id);
+            fetchConsent(session.user.id);
           }, 0);
         } else {
           setProfile(null);
+          setConsentGiven(null);
+          setConsentLoading(false);
         }
 
         if (event === 'INITIAL_SESSION') {
@@ -68,12 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        fetchConsent(session.user.id);
+      } else {
+        setConsentLoading(false);
       }
       setLoading(false);
     });
@@ -82,12 +113,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (
-    email: string, 
-    password: string, 
+    email: string,
+    password: string,
     metadata?: { full_name?: string; user_type?: string; company_name?: string; sme_id?: string; industry_sector?: string }
   ) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -114,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setConsentGiven(null);
   };
 
   const refreshProfile = async () => {
@@ -122,16 +154,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string): Promise<{ error: Error | null }> => {
+    const redirectTo = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    return { error: error as Error | null };
+  };
+
+  const updatePassword = async (newPassword: string): Promise<{ error: Error | null }> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error: error as Error | null };
+  };
+
+  const submitConsent = async (): Promise<{ error: Error | null }> => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    const now = new Date().toISOString();
+
+    // Upsert so this is safe regardless of whether the trigger already created the row.
+    const { error } = await supabase
+      .from('user_consent')
+      .upsert(
+        { user_id: user.id, consent_given: true, consent_timestamp: now },
+        { onConflict: 'user_id' }
+      );
+
+    if (!error) {
+      setConsentGiven(true);
+    }
+
+    return { error: error as Error | null };
+  };
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      profile, 
-      loading, 
-      signUp, 
-      signIn, 
+    <AuthContext.Provider value={{
+      user,
+      session,
+      profile,
+      loading,
+      consentGiven,
+      consentLoading,
+      signUp,
+      signIn,
       signOut,
-      refreshProfile 
+      refreshProfile,
+      submitConsent,
+      resetPassword,
+      updatePassword,
     }}>
       {children}
     </AuthContext.Provider>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+export type AspectRatioKey = 'landscape' | 'widescreen' | 'square' | 'portrait';
+
 export interface StyleConfig {
   fontFamily?: string;
   headerFontSize?: number;
@@ -12,6 +14,7 @@ export interface StyleConfig {
   showBorder?: boolean;
   borderColor?: string;
   showWatermark?: boolean;
+  aspectRatio?: AspectRatioKey;
 }
 
 export interface CertificateTemplate {

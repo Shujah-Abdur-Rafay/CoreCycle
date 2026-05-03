@@ -21,17 +21,14 @@ export function ProtectedRoute({
   redirectTo = "/dashboard",
 }: ProtectedRouteProps) {
   const location = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, consentGiven, consentLoading } = useAuth();
   const {
     userRole,
     loading: roleLoading,
-    isSuperAdmin,
-    isSmeAdmin,
-    isApproved,
     hasReportAccess,
   } = useUserRole();
 
-  if (authLoading || roleLoading) {
+  if (authLoading || roleLoading || consentLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -41,7 +38,14 @@ export function ProtectedRoute({
 
   // Not logged in → auth page
   if (!user) {
-    return <Navigate to={`/auth?mode=login`} state={{ from: location }} replace />;
+    return <Navigate to="/auth?mode=login" state={{ from: location }} replace />;
+  }
+
+  // Consent gate — skip for any admin role, only enforce for learners
+  const ADMIN_ROLES = ['super_admin', 'producer_admin', 'municipality_admin', 'sme_admin'];
+  const isAdmin = ADMIN_ROLES.includes(userRole?.role ?? '');
+  if (!isAdmin && consentGiven === false) {
+    return <Navigate to="/consent" state={{ from: location }} replace />;
   }
 
   // Report-access guard
@@ -51,7 +55,6 @@ export function ProtectedRoute({
 
   // Role-based guard
   if (allowedRoles && allowedRoles.length > 0) {
-    // Use the actual (non-simulated) role for security checks
     const actualRole = userRole?.role ?? null;
     const isAllowed = actualRole && (allowedRoles.includes(actualRole) || actualRole === 'super_admin');
     if (!isAllowed) {

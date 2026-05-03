@@ -106,7 +106,7 @@ export function useModules(courseId: string) {
   const completeModule = async (moduleId: string, quizScore?: number) => {
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from('module_completions')
       .update({
         status: 'completed',
@@ -116,15 +116,51 @@ export function useModules(courseId: string) {
       .eq('module_id', moduleId)
       .eq('user_id', user.id)
       .select()
+      .maybeSingle();
+
+    if (updateError) throw updateError;
+
+    if (updated) {
+      setCompletions(prev =>
+        prev.map(c => c.module_id === moduleId ? (updated as ModuleCompletion) : c)
+      );
+      return updated;
+    }
+
+    // No row to update — startModule never created one. Insert it directly.
+    const { data: mod, error: modError } = await supabase
+      .from('modules')
+      .select('course_id, version')
+      .eq('id', moduleId)
+      .single();
+    if (modError) throw modError;
+
+    const { data: enr, error: enrError } = await supabase
+      .from('enrollments')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('course_id', mod.course_id)
+      .single();
+    if (enrError) throw enrError;
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('module_completions')
+      .insert({
+        user_id: user.id,
+        module_id: moduleId,
+        enrollment_id: enr.id,
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        quiz_score: quizScore,
+        module_version: mod.version || 1
+      })
+      .select()
       .single();
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
-    setCompletions(prev => 
-      prev.map(c => c.module_id === moduleId ? (data as ModuleCompletion) : c)
-    );
-
-    return data;
+    setCompletions(prev => [...prev, inserted as ModuleCompletion]);
+    return inserted;
   };
 
   const updateTimeSpent = async (moduleId: string, additionalMinutes: number) => {

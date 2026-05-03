@@ -1,5 +1,12 @@
-import { CertificateTemplate } from '@/hooks/useCertificateTemplates';
+import { CertificateTemplate, AspectRatioKey } from '@/hooks/useCertificateTemplates';
 import { Award } from 'lucide-react';
+
+const ASPECT_CLASS: Record<AspectRatioKey, string> = {
+  landscape:  'aspect-[4/3]',
+  widescreen: 'aspect-video',
+  square:     'aspect-square',
+  portrait:   'aspect-[3/4]',
+};
 
 export interface CertificateCardData {
   learnerName?: string;
@@ -46,6 +53,7 @@ export function CertificateCard({
   const overlayColor = cfg.overlayColor || '#000000';
   const headerFontSize = cfg.headerFontSize ?? (preview ? 14 : 22);
   const fontFamily = cfg.fontFamily || 'inherit';
+  const aspectClass = ASPECT_CLASS[cfg.aspectRatio ?? 'landscape'];
 
   const backgroundStyle: React.CSSProperties = template.background_url
     ? {
@@ -57,7 +65,7 @@ export function CertificateCard({
 
   return (
     <div
-      className={`relative aspect-square overflow-hidden rounded-2xl select-none ${className}`}
+      className={`relative ${aspectClass} overflow-hidden rounded-2xl select-none ${className}`}
       style={{ ...backgroundStyle, fontFamily }}
     >
       {/* Colour overlay */}

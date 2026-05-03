@@ -66,10 +66,11 @@ const Auth = () => {
     }
   }, [inviteCode]);
 
-  // Redirect if already logged in
+  // Redirect if already logged in — send through /dashboard so ProtectedRoute
+  // can enforce the consent gate before granting access.
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, authLoading, navigate]);
 
@@ -124,7 +125,7 @@ const Auth = () => {
           }
         } else {
           toast.success("Welcome back!");
-          navigate("/");
+          navigate("/dashboard");
         }
       } else {
         // Generate SME ID for business accounts if not provided via invite
@@ -158,7 +159,7 @@ const Auth = () => {
             companyName: userType === 'business' ? formData.companyName : undefined,
             approvalRequired: userType === 'business',
           }).catch(console.error);
-          navigate("/");
+          navigate("/dashboard");
         }
       }
     } finally {
