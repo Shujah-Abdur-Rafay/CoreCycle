@@ -97,12 +97,18 @@ export function Footer() {
             <p className="text-sm text-primary-foreground/60">
               © {currentYear} OntreCycle. All rights reserved.
             </p>
-            <div className="flex items-center gap-6">
-              <Link to="/privacy" className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 justify-center md:justify-end">
+              <Link to="/terms-of-service" className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors">
+                Terms of Service
+              </Link>
+              <Link to="/privacy-policy" className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="/terms" className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors">
-                Terms of Service
+              <Link to="/cookie-policy" className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors">
+                Cookie Policy
+              </Link>
+              <Link to="/acceptable-use-policy" className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors">
+                Acceptable Use
               </Link>
             </div>
           </div>

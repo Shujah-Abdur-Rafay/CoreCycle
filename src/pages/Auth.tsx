@@ -446,11 +446,24 @@ const Auth = () => {
                 </CardContent>
               </Card>
 
-              <p className="mt-6 text-center text-xs text-muted-foreground">
-                By continuing, you agree to our{" "}
-                <Link to="/terms" className="text-leaf hover:underline">Terms of Service</Link>
-                {" "}and{" "}
-                <Link to="/privacy" className="text-leaf hover:underline">Privacy Policy</Link>.
+              <p className="mt-6 text-center text-xs text-muted-foreground leading-relaxed">
+                By creating an account, you confirm that you have read and agree to our{" "}
+                <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-leaf font-medium hover:underline">
+                  Terms of Service
+                </Link>
+                ,{" "}
+                <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-leaf font-medium hover:underline">
+                  Privacy Policy
+                </Link>
+                ,{" "}
+                <Link to="/acceptable-use-policy" target="_blank" rel="noopener noreferrer" className="text-leaf font-medium hover:underline">
+                  Acceptable Use Policy
+                </Link>
+                , and{" "}
+                <Link to="/cookie-policy" target="_blank" rel="noopener noreferrer" className="text-leaf font-medium hover:underline">
+                  Cookie Policy
+                </Link>
+                .
               </p>
             </motion.div>
           </div>

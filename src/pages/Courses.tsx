@@ -257,7 +257,7 @@ const Courses = () => {
                                   )}
                                 </Button>
                               )}
-                              <Link to={`/course/${course.id}`}>
+                              <Link to={`/courses/${course.id}`}>
                                 <Button variant="ghost" className="w-full">
                                   View Details
                                 </Button>

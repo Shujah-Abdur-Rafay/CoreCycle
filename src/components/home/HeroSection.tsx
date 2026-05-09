@@ -106,7 +106,7 @@ export function HeroSection() {
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8">
             {[
-              { value: "5,000+", label: "Trained Professionals" },
+              { value: "Targeting 5,000+", label: "Trained Professionals" },
               { value: "500+", label: "SMEs Certified" },
               { value: "98%", label: "Completion Rate" },
               { value: "100%", label: "Audit Compliance" },

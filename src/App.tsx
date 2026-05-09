@@ -13,6 +13,7 @@ import WasteOverview from "./pages/learn/WasteOverview";
 import WhatsChanged from "./pages/learn/WhatsChanged";
 import HowWeHelp from "./pages/learn/HowWeHelp";
 import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
 import CoursePlayer from "./pages/CoursePlayer";
 import ForSMEs from "./pages/ForSMEs";
 import About from "./pages/About";
@@ -31,6 +32,10 @@ import CertificateManagement from "./pages/admin/CertificateManagement";
 import ConsentScreen from "./pages/ConsentScreen";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import TermsOfService from "./pages/legal/TermsOfService";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import CookiePolicy from "./pages/legal/CookiePolicy";
+import AcceptableUsePolicy from "./pages/legal/AcceptableUsePolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,12 +56,22 @@ const App = () => (
                 <Route path="/learn/whats-changed" element={<WhatsChanged />} />
                 <Route path="/learn/how-we-help" element={<HowWeHelp />} />
                 <Route path="/courses" element={<Courses />} />
+                <Route path="/courses/:courseId" element={<CourseDetail />} />
                 <Route path="/for-smes" element={<ForSMEs />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/consent" element={<ConsentScreen />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+
+                {/* ── Legal & Policy ── */}
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/cookie-policy" element={<CookiePolicy />} />
+                <Route path="/acceptable-use-policy" element={<AcceptableUsePolicy />} />
+                <Route path="/aup" element={<AcceptableUsePolicy />} />
 
                 {/* ── Authenticated learner routes (consent enforced) ── */}
                 <Route path="/course/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />

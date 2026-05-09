@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Recycle, ShieldCheck, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -114,6 +114,46 @@ export default function ConsentScreen() {
                 </a>
                 . Withdrawing consent may limit your ability to use the platform.
               </p>
+
+              <div className="rounded-lg border bg-card p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                  Read our full policies
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to="/terms-of-service"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
+                  <Link
+                    to="/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary transition-colors"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    to="/cookie-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary transition-colors"
+                  >
+                    Cookie Policy
+                  </Link>
+                  <Link
+                    to="/acceptable-use-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary transition-colors"
+                  >
+                    Acceptable Use Policy
+                  </Link>
+                </div>
+              </div>
             </div>
 
             {/* Checkbox */}
@@ -125,8 +165,24 @@ export default function ConsentScreen() {
                 className="mt-0.5"
               />
               <Label htmlFor="consent-checkbox" className="text-sm leading-relaxed cursor-pointer">
-                I have read and understood the above, and I consent to the collection, use, and sharing of my personal
-                data as described. I confirm I am at least 18 years of age.
+                I have read and agree to the{" "}
+                <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-primary font-medium underline underline-offset-2">
+                  Terms of Service
+                </Link>
+                ,{" "}
+                <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary font-medium underline underline-offset-2">
+                  Privacy Policy
+                </Link>
+                ,{" "}
+                <Link to="/acceptable-use-policy" target="_blank" rel="noopener noreferrer" className="text-primary font-medium underline underline-offset-2">
+                  Acceptable Use Policy
+                </Link>
+                , and{" "}
+                <Link to="/cookie-policy" target="_blank" rel="noopener noreferrer" className="text-primary font-medium underline underline-offset-2">
+                  Cookie Policy
+                </Link>
+                . I consent to the collection, use, and sharing of my personal data as described, and confirm I am at
+                least 16 years of age.
               </Label>
             </div>
 

@@ -82,7 +82,6 @@ function findStat(text: string): { stat: string; label: string } | null {
   const stat = m[1];
   let label = text.replace(m[0], "").trim();
   label = label.replace(/^[,.\-:]\s*/, "").replace(/\s+/g, " ").trim();
-  if (label.length > 140) label = label.slice(0, 137) + "...";
   if (!label) return null;
   return { stat, label };
 }
@@ -132,14 +131,26 @@ function processGroupNodes(
     if (tag === "P") {
       const callout = detectCallout(el as HTMLParagraphElement);
       if (callout) {
+        // Always render the full paragraph too so links/formatting aren't lost;
+        // the callout above gives the visual emphasis.
         out.push({ type: "callout", ...callout });
+        out.push({ type: "html", html: el.outerHTML });
         continue;
       }
       const txt = textOf(el);
       if (ctx.highlightCount < 4 && txt.length < 220) {
         const stat = findStat(txt);
         if (stat) {
-          out.push({ type: "highlight", stat: stat.stat, label: stat.label });
+          // If the paragraph is short and essentially just the stat sentence,
+          // replace it with the highlight card. Otherwise emit BOTH so the full
+          // prose is preserved and the highlight just adds visual emphasis.
+          const isStatOnlyParagraph = txt.length < 100;
+          if (isStatOnlyParagraph) {
+            out.push({ type: "highlight", stat: stat.stat, label: stat.label });
+          } else {
+            out.push({ type: "html", html: el.outerHTML });
+            out.push({ type: "highlight", stat: stat.stat, label: stat.label });
+          }
           ctx.highlightCount++;
           continue;
         }
@@ -149,6 +160,8 @@ function processGroupNodes(
     }
 
     if (tag === "BLOCKQUOTE") {
+      // Use callout for visual emphasis but keep the raw blockquote html too
+      // so any inline links/formatting in the quote aren't lost.
       out.push({ type: "callout", variant: "info", body: textOf(el) });
       continue;
     }

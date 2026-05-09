@@ -28,7 +28,7 @@ export function Confetti({ trigger, count = 28, big = false }: ConfettiProps) {
   }, [trigger, count, big]);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center overflow-hidden">
       <AnimatePresence>
         {pieces.map((p) => (
           <motion.div
