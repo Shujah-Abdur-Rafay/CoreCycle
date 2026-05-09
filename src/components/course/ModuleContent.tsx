@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Module, ModuleCompletion } from "@/hooks/useModules";
+import { LessonChapterView } from "./LessonChapterView";
+import { ReadingProgress } from "./ReadingProgress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +51,7 @@ export function ModuleContent({
 }: ModuleContentProps) {
   const [instructorName, setInstructorName] = useState("");
   const [approving, setApproving] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes} minutes`;
@@ -114,7 +117,8 @@ export function ModuleContent({
   const instructorApproved = completion?.instructor_approved;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={contentRef}>
+      {module.content && <ReadingProgress targetRef={contentRef} />}
       {/* Module Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 flex-wrap">
@@ -177,21 +181,9 @@ export function ModuleContent({
         </Card>
       )}
 
-      {/* Module Content */}
+      {/* Module Content — paginated interactive chapter view */}
       {module.content && (
-        <Card>
-          <CardContent className="p-6 lg:p-8">
-            <div 
-              className="prose prose-lg max-w-none dark:prose-invert
-                prose-headings:font-display prose-headings:text-foreground
-                prose-p:text-muted-foreground prose-p:leading-relaxed
-                prose-li:text-muted-foreground
-                prose-strong:text-foreground
-                prose-a:text-primary prose-a:no-underline hover:prose-a:underline"
-              dangerouslySetInnerHTML={{ __html: module.content }}
-            />
-          </CardContent>
-        </Card>
+        <LessonChapterView html={module.content} moduleTitle={module.title} />
       )}
 
       {/* Instructor-Led Module Approval Section */}
