@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Loader2, ImageIcon, Upload, FileText, Video, File, X, Lock, Globe, Users, Building2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ImageIcon, Upload, FileText, Video, File, X, Lock, Globe, Users, Building2, Star, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -83,6 +83,8 @@ export function CourseEditor() {
     content_type: "",
     access_type: 'public' as CourseAccessType,
     is_sme_specific: false,
+    is_featured: false,
+    show_on_homepage: false,
     final_quiz_id: null as string | null,
   });
 
@@ -112,6 +114,8 @@ export function CourseEditor() {
             content_type: data.content_type || "",
             access_type: (data as any).access_type ?? 'public',
             is_sme_specific: (data as any).is_sme_specific ?? false,
+            is_featured: (data as any).is_featured ?? false,
+            show_on_homepage: (data as any).show_on_homepage ?? false,
             final_quiz_id: (data as any).final_quiz_id ?? null,
           });
         }
@@ -421,6 +425,60 @@ export function CourseEditor() {
                     onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Promotion */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                  Promotion
+                </CardTitle>
+                <CardDescription>
+                  Highlight this course across the site
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="is_featured" className="flex items-center gap-1.5">
+                      <Star className="h-3.5 w-3.5" />
+                      Featured Course
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Marks the course as featured in listings
+                    </p>
+                  </div>
+                  <Switch
+                    id="is_featured"
+                    checked={formData.is_featured}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show_on_homepage" className="flex items-center gap-1.5">
+                      <Home className="h-3.5 w-3.5" />
+                      Show on Homepage
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Use this course in the "Start Your Journey" section
+                    </p>
+                  </div>
+                  <Switch
+                    id="show_on_homepage"
+                    checked={formData.show_on_homepage}
+                    onCheckedChange={(checked) => setFormData({ ...formData, show_on_homepage: checked })}
+                  />
+                </div>
+                {formData.show_on_homepage && (
+                  <p className="text-xs text-warning flex items-center gap-1">
+                    <Home className="h-3 w-3" />
+                    Only one course can be on the homepage — saving will replace the current one.
+                  </p>
+                )}
               </CardContent>
             </Card>
 

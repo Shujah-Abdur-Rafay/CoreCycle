@@ -18,7 +18,6 @@ import { KeyTermsBlock } from "./blocks/KeyTermsBlock";
 import { FlashcardSet } from "./blocks/FlashcardSet";
 import { ChapterHero } from "./blocks/ChapterHero";
 import { XPCounter } from "./blocks/XPCounter";
-import { Confetti } from "./blocks/Confetti";
 
 const proseClass =
   "prose prose-lg max-w-none dark:prose-invert " +
@@ -80,8 +79,6 @@ export function LessonChapterView({ html, moduleTitle, onAllChaptersRead }: Less
 
   const [active, setActive] = useState(0);
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
-  const [confettiTrigger, setConfettiTrigger] = useState(0);
-  const [bigConfetti, setBigConfetti] = useState(false);
   const [streak, setStreak] = useState(0);
   const [focused, setFocused] = useState(false);
   const focusBodyRef = useRef<HTMLDivElement>(null);
@@ -149,8 +146,6 @@ export function LessonChapterView({ html, moduleTitle, onAllChaptersRead }: Less
   useEffect(() => {
     if (allRead && !allReadFiredRef.current) {
       allReadFiredRef.current = true;
-      setBigConfetti(true);
-      setConfettiTrigger((t) => t + 1);
       onAllChaptersRead?.();
     }
   }, [allRead, onAllChaptersRead]);
@@ -178,8 +173,6 @@ export function LessonChapterView({ html, moduleTitle, onAllChaptersRead }: Less
         const nextIdx = active + 1;
         const isNew = !visited.has(nextIdx);
         if (isNew) {
-          setBigConfetti(false);
-          setConfettiTrigger((c) => c + 1);
           setStreak((s) => s + 1);
         }
         setActive(nextIdx);
@@ -201,8 +194,6 @@ export function LessonChapterView({ html, moduleTitle, onAllChaptersRead }: Less
     if (i < 0 || i >= total || i === active) return;
     const isNew = !visited.has(i);
     if (isAdvance && isNew) {
-      setBigConfetti(false);
-      setConfettiTrigger((t) => t + 1);
       setStreak((s) => s + 1);
     } else if (!isNew) {
       setStreak(0);
@@ -230,9 +221,7 @@ export function LessonChapterView({ html, moduleTitle, onAllChaptersRead }: Less
 
   return (
     <div className="space-y-5">
-      <Confetti trigger={confettiTrigger} count={bigConfetti ? 80 : 24} big={bigConfetti} />
-
-      {/* Status bar: XP + streak */}
+{/* Status bar: XP + streak */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <XPCounter xp={xp} max={maxXP} />

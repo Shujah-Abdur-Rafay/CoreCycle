@@ -107,14 +107,6 @@ export default function ConsentScreen() {
                 <li>Retain your data for as long as your account is active, or as required by law.</li>
               </ul>
 
-              <p>
-                You may withdraw consent at any time by contacting us at{" "}
-                <a href="mailto:privacy@ontrecycle.ca" className="text-primary underline underline-offset-2">
-                  privacy@ontrecycle.ca
-                </a>
-                . Withdrawing consent may limit your ability to use the platform.
-              </p>
-
               <div className="rounded-lg border bg-card p-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
                   Read our full policies

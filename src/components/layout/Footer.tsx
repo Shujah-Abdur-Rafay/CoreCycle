@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Recycle, Mail, MapPin, Phone } from "lucide-react";
+import { Recycle, Mail, MapPin } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -83,10 +83,6 @@ export function Footer() {
                 <a href="mailto:info@ontrecycle.ca" className="hover:text-primary-foreground transition-colors">
                   info@ontrecycle.ca
                 </a>
-              </li>
-              <li className="flex items-center gap-2 text-sm text-primary-foreground/70">
-                <Phone className="h-4 w-4" />
-                <span>1-800-ONTRECYCLE</span>
               </li>
             </ul>
           </div>

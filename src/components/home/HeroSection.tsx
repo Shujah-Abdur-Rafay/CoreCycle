@@ -102,23 +102,25 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-16 lg:mt-24 max-w-4xl mx-auto"
+          className="mt-16 lg:mt-24 max-w-5xl mx-auto px-2 sm:px-0"
         >
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {[
-              { value: "Targeting 5,000+", label: "Trained Professionals" },
-              { value: "500+", label: "SMEs Certified" },
-              { value: "98%", label: "Completion Rate" },
-              { value: "100%", label: "Audit Compliance" },
+              { value: "Working toward 5,000+", label: "Professionals to be Trained" },
+              { value: "Aiming for 500+", label: "SMEs to Certify" },
+              { value: "Striving for 100%", label: "Target Completion Rate" },
+              { value: "Pursuing 100%", label: "Audit Compliance Goal" },
             ].map((stat, index) => (
               <div
                 key={index}
-                className="text-center p-4 lg:p-6 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20"
+                className="flex flex-col items-center justify-center text-center p-4 sm:p-5 lg:p-6 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 min-h-[120px] sm:min-h-[140px] lg:min-h-[160px]"
               >
-                <div className="text-2xl lg:text-3xl font-display font-bold text-primary-foreground mb-1">
+                <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-display font-bold text-primary-foreground mb-1 sm:mb-2 leading-tight break-words">
                   {stat.value}
                 </div>
-                <div className="text-sm text-primary-foreground/70">{stat.label}</div>
+                <div className="text-xs sm:text-sm text-primary-foreground/70 leading-snug">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>

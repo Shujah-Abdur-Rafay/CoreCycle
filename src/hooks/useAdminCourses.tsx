@@ -26,6 +26,8 @@ export interface AdminCourse {
   is_published: boolean;
   access_type: CourseAccessType;
   is_sme_specific: boolean;
+  is_featured: boolean;
+  show_on_homepage: boolean;
   final_quiz_id: string | null;
   created_at: string;
   updated_at: string;
@@ -117,6 +119,9 @@ export function useAdminCourses() {
   };
 
   const createCourse = async (courseData: Partial<AdminCourse>) => {
+    if (courseData.show_on_homepage) {
+      await supabase.from('courses').update({ show_on_homepage: false } as any).eq('show_on_homepage', true);
+    }
     const { data, error } = await supabase
       .from('courses')
       .insert({
@@ -130,6 +135,8 @@ export function useAdminCourses() {
         is_published: courseData.is_published || false,
         access_type: courseData.access_type || 'public',
         is_sme_specific: courseData.is_sme_specific || false,
+        is_featured: courseData.is_featured || false,
+        show_on_homepage: courseData.show_on_homepage || false,
         final_quiz_id: courseData.final_quiz_id || null,
       } as any)
       .select()
@@ -141,6 +148,13 @@ export function useAdminCourses() {
   };
 
   const updateCourse = async (courseId: string, courseData: Partial<AdminCourse>) => {
+    if (courseData.show_on_homepage) {
+      await supabase
+        .from('courses')
+        .update({ show_on_homepage: false } as any)
+        .eq('show_on_homepage', true)
+        .neq('id', courseId);
+    }
     const { data, error } = await supabase
       .from('courses')
       .update({
@@ -154,6 +168,8 @@ export function useAdminCourses() {
         is_published: courseData.is_published,
         access_type: courseData.access_type,
         is_sme_specific: courseData.is_sme_specific,
+        is_featured: courseData.is_featured,
+        show_on_homepage: courseData.show_on_homepage,
         final_quiz_id: courseData.final_quiz_id,
       } as any)
       .eq('id', courseId)
