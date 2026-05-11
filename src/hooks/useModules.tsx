@@ -53,6 +53,22 @@ export function useModules(courseId: string) {
         .order('order_index', { ascending: true });
 
       if (modulesError) throw modulesError;
+      if (import.meta.env.DEV) {
+        // Verification log: raw DB rows vs what the UI will render.
+        // Compares row count + every column key per module so any drift
+        // between DB content and rendered state is visible in DevTools.
+        // eslint-disable-next-line no-console
+        console.debug('[useModules] DB rows for course', courseId, {
+          count: (data || []).length,
+          rows: (data || []).map(m => ({
+            id: m.id,
+            title: m.title,
+            keys: Object.keys(m),
+            content_length: m.content ? m.content.length : 0,
+            description_length: m.description ? m.description.length : 0,
+          })),
+        });
+      }
       setModules(data || []);
     } catch (err) {
       setError(err as Error);

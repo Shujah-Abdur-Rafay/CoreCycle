@@ -101,10 +101,8 @@ function extractHook(nodes: HTMLElement[]): { hook: string | null; consumeIndex:
     const sentenceMatch = text.match(/^[^.!?]+[.!?]/);
     const candidate = (sentenceMatch ? sentenceMatch[0] : text).trim();
     if (candidate.length >= 30 && candidate.length <= 220) {
-      // If the paragraph is essentially just this sentence, consume the whole paragraph
-      if (text.length - candidate.length < 12) {
-        return { hook: candidate, consumeIndex: i };
-      }
+      // Never consume the underlying paragraph — the hook is a display-only
+      // echo so the full DB content stays rendered in the chapter body.
       return { hook: candidate, consumeIndex: -1 };
     }
     break;
@@ -131,8 +129,6 @@ function processGroupNodes(
     if (tag === "P") {
       const callout = detectCallout(el as HTMLParagraphElement);
       if (callout) {
-        // Always render the full paragraph too so links/formatting aren't lost;
-        // the callout above gives the visual emphasis.
         out.push({ type: "callout", ...callout });
         out.push({ type: "html", html: el.outerHTML });
         continue;
@@ -141,16 +137,10 @@ function processGroupNodes(
       if (ctx.highlightCount < 4 && txt.length < 220) {
         const stat = findStat(txt);
         if (stat) {
-          // If the paragraph is short and essentially just the stat sentence,
-          // replace it with the highlight card. Otherwise emit BOTH so the full
-          // prose is preserved and the highlight just adds visual emphasis.
-          const isStatOnlyParagraph = txt.length < 100;
-          if (isStatOnlyParagraph) {
-            out.push({ type: "highlight", stat: stat.stat, label: stat.label });
-          } else {
-            out.push({ type: "html", html: el.outerHTML });
-            out.push({ type: "highlight", stat: stat.stat, label: stat.label });
-          }
+          // Always emit the full paragraph so inline links/strong/em are preserved.
+          // The highlight card only adds visual emphasis on top.
+          out.push({ type: "html", html: el.outerHTML });
+          out.push({ type: "highlight", stat: stat.stat, label: stat.label });
           ctx.highlightCount++;
           continue;
         }
@@ -160,9 +150,10 @@ function processGroupNodes(
     }
 
     if (tag === "BLOCKQUOTE") {
-      // Use callout for visual emphasis but keep the raw blockquote html too
-      // so any inline links/formatting in the quote aren't lost.
+      // Emit both: the callout for emphasis + the original blockquote HTML
+      // so inline links/formatting inside the quote are never lost.
       out.push({ type: "callout", variant: "info", body: textOf(el) });
+      out.push({ type: "html", html: el.outerHTML });
       continue;
     }
 
@@ -171,7 +162,6 @@ function processGroupNodes(
       if (!emittedTermsThisGroup.has(ul) && isLikelyKeyTermsList(ul)) {
         const items = extractKeyTerms(ul);
         if (items.length >= 2) {
-          // Choose ONE representation based on count: short list → key terms grid, long list → flashcards
           if (items.length <= 4) {
             out.push({ type: "keyTerms", items });
           } else {
@@ -181,6 +171,9 @@ function processGroupNodes(
             });
           }
           emittedTermsThisGroup.add(ul);
+          // Also keep the original list HTML so any inline links/formatting
+          // inside list items aren't dropped from the rendered lesson.
+          out.push({ type: "html", html: el.outerHTML });
           continue;
         }
       }
@@ -237,8 +230,10 @@ export function parseLesson(html: string, fallbackTitle = "Introduction"): Parse
     if (firstP) {
       const txt = textOf(firstP);
       if (txt.length >= 60 && txt.length <= 600 && !detectCallout(firstP as HTMLParagraphElement)) {
+        // Display the summary as a visual lead-in but do NOT mark the paragraph
+        // consumed — the original paragraph must still render in the chapter
+        // body so all DB content reaches the user.
         summary = txt;
-        firstP.setAttribute("data-consumed", "1");
       }
     }
   }

@@ -213,9 +213,14 @@ export default function CourseDetail() {
                 <h1 className="text-3xl lg:text-5xl font-display font-bold text-foreground tracking-tight mb-4">
                   {course.title}
                 </h1>
-                {(course.short_description || course.description) && (
+                {course.short_description && (
                   <p className="text-base lg:text-lg text-foreground/75 leading-relaxed max-w-3xl">
-                    {course.short_description || course.description}
+                    {course.short_description}
+                  </p>
+                )}
+                {course.description && !course.short_description && (
+                  <p className="text-base lg:text-lg text-foreground/75 leading-relaxed max-w-3xl whitespace-pre-line">
+                    {course.description}
                   </p>
                 )}
 
@@ -376,7 +381,7 @@ export default function CourseDetail() {
                             {m.title}
                           </h3>
                           {m.description && (
-                            <p className="text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+                            <p className="text-sm text-muted-foreground mt-1 leading-relaxed whitespace-pre-line">
                               {m.description}
                             </p>
                           )}
