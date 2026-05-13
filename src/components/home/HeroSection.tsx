@@ -29,7 +29,7 @@ export function HeroSection() {
       <div className="absolute top-20 right-10 w-72 h-72 bg-leaf/20 rounded-full blur-3xl animate-pulse-soft" />
       <div className="absolute bottom-20 left-10 w-96 h-96 bg-forest-light/20 rounded-full blur-3xl animate-pulse-soft" />
       
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-24 lg:pt-32">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-24 lg:pt-32 pb-8 lg:pb-10">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -104,21 +104,26 @@ export function HeroSection() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-16 lg:mt-24 max-w-5xl mx-auto px-2 sm:px-0"
         >
+          <div className="flex justify-center mb-6 sm:mb-8">
+            <span className="inline-block px-5 py-1.5 rounded-full bg-primary-foreground/15 backdrop-blur-sm border border-primary-foreground/25 text-primary-foreground font-display font-semibold text-base sm:text-lg tracking-wide">
+              Targeting
+            </span>
+          </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {[
-              { value: "Working toward 5,000+", label: "Professionals to be Trained" },
-              { value: "Aiming for 500+", label: "SMEs to Certify" },
-              { value: "Striving for 100%", label: "Target Completion Rate" },
-              { value: "Pursuing 100%", label: "Audit Compliance Goal" },
+              { value: "5,000+", label: "Trained Professionals" },
+              { value: "500+", label: "SMEs Certified" },
+              { value: "98%", label: "Completion Rate" },
+              { value: "100%", label: "Audit Compliance" },
             ].map((stat, index) => (
               <div
                 key={index}
                 className="flex flex-col items-center justify-center text-center p-4 sm:p-5 lg:p-6 rounded-2xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 min-h-[120px] sm:min-h-[140px] lg:min-h-[160px]"
               >
-                <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-display font-bold text-primary-foreground mb-1 sm:mb-2 leading-tight break-words">
+                <div className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-display font-bold text-primary-foreground mb-1 sm:mb-2 leading-none">
                   {stat.value}
                 </div>
-                <div className="text-xs sm:text-sm text-primary-foreground/70 leading-snug">
+                <div className="text-xs sm:text-sm text-primary-foreground/80 leading-snug">
                   {stat.label}
                 </div>
               </div>
@@ -126,22 +131,6 @@ export function HeroSection() {
           </div>
         </motion.div>
       </div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.6 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-      >
-        <div className="w-6 h-10 rounded-full border-2 border-primary-foreground/30 flex items-start justify-center p-2">
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-1.5 h-1.5 rounded-full bg-primary-foreground/60"
-          />
-        </div>
-      </motion.div>
     </section>
   );
 }
