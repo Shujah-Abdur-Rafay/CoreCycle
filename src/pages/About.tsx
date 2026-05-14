@@ -3,8 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
-  Recycle, 
-  Target, 
+  Target,
   Users,
   Award,
   Leaf
@@ -31,9 +30,12 @@ const About = () => {
               transition={{ duration: 0.6 }}
               className="max-w-3xl mx-auto text-center"
             >
-              <div className="w-16 h-16 rounded-2xl bg-leaf/10 flex items-center justify-center mx-auto mb-6">
-                <Recycle className="h-8 w-8 text-leaf" />
-              </div>
+              <img
+                src="/logo.jpeg"
+                alt="Ontrecycle"
+                className="w-20 h-20 rounded-2xl object-contain bg-white mx-auto mb-6 shadow-sm"
+              />
+
               <h1 className="text-4xl lg:text-6xl font-display font-bold text-foreground mb-6">
                 About OntreCycle
               </h1>

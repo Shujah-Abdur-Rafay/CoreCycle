@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Recycle, ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -70,11 +70,8 @@ export default function ConsentScreen() {
         className="w-full max-w-lg"
       >
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-            <Recycle className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold text-foreground">OntreCycle</span>
+        <div className="flex items-center justify-center mb-8">
+          <img src="/logo-text.jpeg" alt="Ontrecycle" className="h-24 w-auto object-contain" />
         </div>
 
         <Card className="border-0 shadow-xl">

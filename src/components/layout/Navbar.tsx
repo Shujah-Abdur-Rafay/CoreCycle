@@ -95,17 +95,15 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className={`p-2 rounded-xl transition-colors ${
-              isHomePage ? "bg-primary-foreground/20" : "bg-primary"
-            }`}>
-              <Recycle className={`h-6 w-6 ${
-                isHomePage ? "text-primary-foreground" : "text-primary-foreground"
-              }`} />
-            </div>
+            <img
+              src="/logo.jpeg"
+              alt="Ontrecycle"
+              className="h-10 w-10 rounded-xl object-contain bg-white p-1"
+            />
             <span className={`text-xl font-display font-bold ${
               isHomePage ? "text-primary-foreground" : "text-foreground"
             }`}>
-              OntreCycle
+              Ontrecycle
             </span>
           </Link>
 

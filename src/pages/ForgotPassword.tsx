@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Recycle, Mail, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,11 +54,8 @@ export default function ForgotPassword() {
               transition={{ duration: 0.5 }}
               className="text-center mb-8"
             >
-              <Link to="/" className="inline-flex items-center gap-2 mb-6">
-                <div className="p-2 rounded-xl bg-primary">
-                  <Recycle className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-display font-bold text-foreground">OntreCycle</span>
+              <Link to="/" className="inline-flex items-center justify-center mb-6">
+                <img src="/logo-text.jpeg" alt="Ontrecycle" className="h-20 w-auto object-contain" />
               </Link>
 
               <h1 className="text-3xl font-display font-bold text-foreground mb-2">

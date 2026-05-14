@@ -25,7 +25,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Recycle,
   Users,
   FileText,
   Settings,
@@ -107,13 +106,15 @@ function AdminSidebar({ simulatedRole }: AdminSidebarProps) {
     <Sidebar collapsible="icon" className="border-r border-border">
       <div className="p-4 border-b border-border">
         <Link to="/" className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-primary shrink-0">
-            <Recycle className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img
+            src="/logo.jpeg"
+            alt="Ontrecycle"
+            className="h-9 w-9 rounded-xl object-contain bg-white p-0.5 shrink-0"
+          />
           {!collapsed && (
             <div className="flex flex-col">
               <span className="text-lg font-display font-bold text-foreground">
-                OntreCycle
+                Ontrecycle
               </span>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Shield className="h-3 w-3" />

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Recycle, Mail, MapPin } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -11,10 +11,12 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-xl bg-primary-foreground/20">
-                <Recycle className="h-6 w-6" />
-              </div>
-              <span className="text-xl font-display font-bold">OntreCycle</span>
+              <img
+                src="/logo.jpeg"
+                alt="Ontrecycle"
+                className="h-10 w-10 rounded-xl object-contain bg-white p-1"
+              />
+              <span className="text-xl font-display font-bold">Ontrecycle</span>
             </Link>
             <p className="text-primary-foreground/70 text-sm leading-relaxed mb-4">
               OntreCycle - Training Ontario businesses and individuals for a sustainable future.
