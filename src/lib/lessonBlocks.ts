@@ -101,9 +101,13 @@ function extractHook(nodes: HTMLElement[]): { hook: string | null; consumeIndex:
     const sentenceMatch = text.match(/^[^.!?]+[.!?]/);
     const candidate = (sentenceMatch ? sentenceMatch[0] : text).trim();
     if (candidate.length >= 30 && candidate.length <= 220) {
-      // Never consume the underlying paragraph — the hook is a display-only
-      // echo so the full DB content stays rendered in the chapter body.
-      return { hook: candidate, consumeIndex: -1 };
+      // If the hook captures the entire paragraph, consume it — the hero
+      // already shows the full content, so leaving the paragraph in the body
+      // would render the same text twice. If the hook is only the first
+      // sentence of a longer paragraph, leave the paragraph intact so the
+      // remaining sentences still reach the reader.
+      const consumeIndex = candidate === text ? i : -1;
+      return { hook: candidate, consumeIndex };
     }
     break;
   }
