@@ -92,15 +92,15 @@ export function Navbar() {
       isHomePage ? "bg-transparent" : "bg-background/95 backdrop-blur-md border-b border-border"
     }`}>
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
+        <div className="flex items-center justify-between h-20 lg:h-24">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link to="/" className="flex items-center gap-2.5 group">
             <img
               src="/logo.jpeg"
               alt="Ontrecycle"
-              className="h-10 w-10 rounded-xl object-contain bg-white p-1"
+              className="h-14 w-14 lg:h-16 lg:w-16 rounded-xl object-contain bg-white p-0.5 shadow-sm"
             />
-            <span className={`text-xl font-display font-bold ${
+            <span className={`text-2xl lg:text-3xl font-display font-bold ${
               isHomePage ? "text-primary-foreground" : "text-foreground"
             }`}>
               Ontrecycle
