@@ -1,0 +1,19 @@
+Course 1 — Recycle Right Ontario (Public Edition)
+
+module 1, b,c,c
+module 2, c,d,b
+module 3, c,a,b
+module 4, b,b,c
+module 5, c,c,c
+module 6, a,b,b
+module 7, c,b,b
+module 8, b,a,c
+module 9, b,b,b
+module 10, b,a,a
+module 11, b,c,b
+module 12, a,a,b
+module 13, b,c,b
+module 14, b,b,a
+module 15, b,b,b
+module 16, b,c,b
+final quiz (module 17), b,a,b,a,d,b,b,b,c,c

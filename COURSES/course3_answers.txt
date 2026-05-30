@@ -1,0 +1,7 @@
+Course 3 — Recycling & Waste Management for SMEs in Ontario
+
+module 1, c,b,c
+module 2, b,a,c
+module 3, c,b,b
+module 4, b,c,c
+final quiz (module 5), b,b,c,c,b,c,b,c,c,c

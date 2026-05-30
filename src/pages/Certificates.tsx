@@ -27,6 +27,118 @@ interface CertificateWithTemplate {
   template: CertificateTemplate | null;
 }
 
+/**
+ * Renders one certificate preview plus its download button. The PDF is produced
+ * by rasterizing the exact preview node below, so the download always matches
+ * what is shown on screen (the design the admin configured).
+ */
+function CertificateItem({ certificate, template, index }: CertificateWithTemplate & { index: number }) {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      await generateCertificatePdf({
+        data: {
+          learnerName: certificate.learner_name,
+          courseTitle: certificate.course_title,
+          completionDate: format(new Date(certificate.issued_at), "MMMM d, yyyy"),
+          certificateNumber: certificate.certificate_number,
+          companyName: certificate.company_name || undefined,
+        },
+        template,
+      });
+      toast.success("Certificate downloaded successfully!");
+    } catch (error) {
+      toast.error("Failed to generate certificate");
+      console.error("PDF generation error:", error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
+      className="space-y-4"
+    >
+      {/* On-screen preview (the PDF is generated as vector to match this) */}
+      <div className="w-full max-w-sm mx-auto">
+        {/* ── Template-based card (if linked) ── */}
+        {template ? (
+          <CertificateCard
+            template={template}
+            data={{
+              learnerName: certificate.learner_name,
+              courseTitle: certificate.course_title,
+              completionDate: format(new Date(certificate.issued_at), "MMMM d, yyyy"),
+              certificateNumber: certificate.certificate_number,
+            }}
+            className="w-full shadow-lg"
+          />
+        ) : (
+          /* ── Fallback: original gradient card ── */
+          <Card className="w-full overflow-hidden shadow-lg border-leaf/20">
+            <div className="bg-gradient-to-r from-forest to-leaf p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Award className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/80">Certificate of Completion</p>
+                  <p className="font-medium text-sm">{certificate.certificate_number}</p>
+                </div>
+              </div>
+            </div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg line-clamp-2">{certificate.course_title}</CardTitle>
+              <CardDescription>Awarded to {certificate.learner_name}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span>Issued: {format(new Date(certificate.issued_at), "MMMM d, yyyy")}</span>
+              </div>
+              {certificate.company_name && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="h-4 w-4 shrink-0" />
+                  <span>{certificate.company_name}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="font-mono text-xs">{certificate.certificate_number}</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-600">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span className="text-xs font-medium">All modules & quizzes completed</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Download button — always shown */}
+      <Button
+        className="w-full max-w-sm mx-auto flex"
+        variant="forest"
+        onClick={handleDownload}
+        disabled={downloading}
+      >
+        {downloading ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4 mr-2" />
+        )}
+        {downloading ? "Generating PDF..." : "Download PDF"}
+      </Button>
+    </motion.div>
+  );
+}
+
 const Certificates = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -65,23 +177,6 @@ const Certificates = () => {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [certificates, certificatesLoading]);
-
-  const handleDownload = (item: CertificateWithTemplate) => {
-    const { certificate } = item;
-    try {
-      generateCertificatePdf({
-        learnerName: certificate.learner_name,
-        courseTitle: certificate.course_title,
-        completionDate: format(new Date(certificate.issued_at), 'MMMM d, yyyy'),
-        certificateNumber: certificate.certificate_number,
-        companyName: certificate.company_name || undefined,
-      });
-      toast.success('Certificate downloaded successfully!');
-    } catch (error) {
-      toast.error('Failed to generate certificate');
-      console.error('PDF generation error:', error);
-    }
-  };
 
   if (authLoading) {
     return (
@@ -142,76 +237,12 @@ const Certificates = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {enriched.map(({ certificate, template }, index) => (
-                <motion.div
+                <CertificateItem
                   key={certificate.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="space-y-4"
-                >
-                  {/* ── Template-based square card (if linked) ── */}
-                  {template ? (
-                    <CertificateCard
-                      template={template}
-                      data={{
-                        learnerName: certificate.learner_name,
-                        courseTitle: certificate.course_title,
-                        completionDate: format(new Date(certificate.issued_at), 'MMMM d, yyyy'),
-                        certificateNumber: certificate.certificate_number,
-                      }}
-                      className="w-full max-w-sm mx-auto shadow-lg"
-                    />
-                  ) : (
-                    /* ── Fallback: original gradient card ── */
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow border-leaf/20">
-                      <div className="bg-gradient-to-r from-forest to-leaf p-6 text-white">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-white/20 rounded-lg">
-                            <Award className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-white/80">Certificate of Completion</p>
-                            <p className="font-medium text-sm">{certificate.certificate_number}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg line-clamp-2">{certificate.course_title}</CardTitle>
-                        <CardDescription>Awarded to {certificate.learner_name}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="h-4 w-4 shrink-0" />
-                          <span>Issued: {format(new Date(certificate.issued_at), 'MMMM d, yyyy')}</span>
-                        </div>
-                        {certificate.company_name && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Building2 className="h-4 w-4 shrink-0" />
-                            <span>{certificate.company_name}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <FileText className="h-4 w-4 shrink-0" />
-                          <span className="font-mono text-xs">{certificate.certificate_number}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-emerald-600">
-                          <CheckCircle2 className="h-4 w-4 shrink-0" />
-                          <span className="text-xs font-medium">All modules & quizzes completed</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Download button — always shown */}
-                  <Button
-                    className="w-full max-w-sm mx-auto flex"
-                    variant="forest"
-                    onClick={() => handleDownload({ certificate, template })}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </Button>
-                </motion.div>
+                  certificate={certificate}
+                  template={template}
+                  index={index}
+                />
               ))}
             </div>
           )}

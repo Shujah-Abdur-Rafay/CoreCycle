@@ -1,0 +1,8 @@
+Course 2 — Battery Recycling in Ontario
+
+module 1, c,c,b
+module 2, c,c,c
+module 3, b,b,c
+module 4, c,c,c
+module 5, b,b,b
+final quiz (module 6), c,c,c,b,c,c,b,b,c,b
