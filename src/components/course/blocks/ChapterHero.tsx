@@ -6,12 +6,11 @@ interface ChapterHeroProps {
   number: number;
   total: number;
   title: string;
-  hook?: string;
   theme: ChapterTheme;
   compact?: boolean;
 }
 
-export function ChapterHero({ number, total, title, hook, theme, compact = false }: ChapterHeroProps) {
+export function ChapterHero({ number, total, title, theme, compact = false }: ChapterHeroProps) {
   const Icon = theme.icon;
   return (
     <div className={cn(
@@ -62,14 +61,6 @@ export function ChapterHero({ number, total, title, hook, theme, compact = false
           )}>
             {title}
           </h2>
-          {hook && (
-            <p className={cn(
-              "text-foreground/75 leading-relaxed font-medium",
-              compact ? "mt-1.5 text-sm lg:text-base" : "mt-3 text-base lg:text-lg"
-            )}>
-              {hook}
-            </p>
-          )}
         </div>
       </div>
     </div>

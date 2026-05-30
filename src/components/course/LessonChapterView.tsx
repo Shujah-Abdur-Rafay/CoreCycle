@@ -583,7 +583,6 @@ export function LessonChapterView({ html, moduleTitle, onAllChaptersRead }: Less
                 number={active + 1}
                 total={total}
                 title={chapter.title}
-                hook={chapter.hook}
                 theme={theme}
                 compact={isFocusMode}
               />

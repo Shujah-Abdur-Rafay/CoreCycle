@@ -10,7 +10,6 @@ export type LessonBlock =
 export interface LessonChapter {
   id: string;
   title: string;
-  hook?: string;
   blocks: LessonBlock[];
   estimatedSeconds: number;
 }
@@ -88,30 +87,6 @@ function findStat(text: string): { stat: string; label: string } | null {
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
-function extractHook(nodes: HTMLElement[]): { hook: string | null; consumeIndex: number } {
-  for (let i = 0; i < nodes.length; i++) {
-    const el = nodes[i];
-    if (el.tagName !== "P") continue;
-    if (detectCallout(el as HTMLParagraphElement)) continue;
-    const text = textOf(el);
-    if (!text) continue;
-    // Take first sentence (or up to 180 chars)
-    const sentenceMatch = text.match(/^[^.!?]+[.!?]/);
-    const candidate = (sentenceMatch ? sentenceMatch[0] : text).trim();
-    if (candidate.length >= 30 && candidate.length <= 220) {
-      // If the hook captures the entire paragraph, consume it — the hero
-      // already shows the full content, so leaving the paragraph in the body
-      // would render the same text twice. If the hook is only the first
-      // sentence of a longer paragraph, leave the paragraph intact so the
-      // remaining sentences still reach the reader.
-      const consumeIndex = candidate === text ? i : -1;
-      return { hook: candidate, consumeIndex };
-    }
-    break;
-  }
-  return { hook: null, consumeIndex: -1 };
 }
 
 function processGroupNodes(
@@ -258,14 +233,13 @@ export function parseLesson(html: string, fallbackTitle = "Introduction"): Parse
   const chapters: LessonChapter[] = [];
 
   const buildChapter = (id: string, title: string, nodes: HTMLElement[]): LessonChapter | null => {
-    const { hook, consumeIndex } = extractHook(nodes);
-    const remaining = consumeIndex >= 0 ? nodes.filter((_, i) => i !== consumeIndex) : nodes;
-    const blocks = processGroupNodes(remaining, ctx);
-    if (blocks.length === 0 && !hook) return null;
+    // Chapter heroes render the heading only — no introductory hook text.
+    // All paragraph content stays in the body so nothing is duplicated or lost.
+    const blocks = processGroupNodes(nodes, ctx);
+    if (blocks.length === 0) return null;
     return {
       id,
       title,
-      hook: hook || undefined,
       blocks,
       estimatedSeconds: estimateSeconds(blocks),
     };
