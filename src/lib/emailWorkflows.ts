@@ -19,6 +19,8 @@ import {
 } from './emailTemplates';
 
 // ─── Base URLs (from environment) ────────────────────────────────────────────
+// NOTE: VITE_BASE_URL must be set in the Vercel project env (not just .env, which
+// is gitignored). Falls back to the production domain when unset.
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://ontrecycle.com';
 const HELP_URL = `${BASE_URL}/help`;
