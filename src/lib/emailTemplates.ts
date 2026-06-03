@@ -104,10 +104,6 @@ function wrapTemplate(content: string): string {
         <strong>OntreCycle</strong> - Ontario Waste Diversion Academy
       </p>
       <p class="email-footer-text">
-        <a href="{{unsubscribeUrl}}" class="email-footer-link">Unsubscribe</a> | 
-        <a href="{{helpUrl}}" class="email-footer-link">Help Center</a>
-      </p>
-      <p class="email-footer-text">
         © ${new Date().getFullYear()} OntreCycle. All rights reserved.
       </p>
     </div>

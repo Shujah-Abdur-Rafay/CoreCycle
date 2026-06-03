@@ -29,6 +29,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Supabase migrations (may contain secrets; applied manually via SQL Editor)
+supabase/migrations/
+
 # Temporary files
 tmp/
 *.tmp
