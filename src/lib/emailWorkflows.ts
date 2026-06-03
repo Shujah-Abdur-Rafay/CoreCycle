@@ -18,11 +18,15 @@ import {
   type AdminAdditionData,
 } from './emailTemplates';
 
-// ─── Base URLs (from environment) ────────────────────────────────────────────
-// NOTE: VITE_BASE_URL must be set in the Vercel project env (not just .env, which
-// is gitignored). Falls back to the production domain when unset.
-
-const BASE_URL = import.meta.env.VITE_BASE_URL || 'https://ontrecycle.com';
+// ─── Base URLs ───────────────────────────────────────────────────────────────
+// Email links must ALWAYS point to the public production site — never localhost.
+// If VITE_BASE_URL is unset or points at localhost (e.g. a dev/Vercel env), fall
+// back to the canonical production domain.
+const ENV_BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL =
+  !ENV_BASE_URL || ENV_BASE_URL.includes('localhost')
+    ? 'https://www.ontrecycle.com'
+    : ENV_BASE_URL;
 const HELP_URL = `${BASE_URL}/help`;
 const UNSUBSCRIBE_URL = `${BASE_URL}/unsubscribe`;
 
