@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
+import {
   ArrowLeft,
   Plus,
   GripVertical,
@@ -11,7 +11,10 @@ import {
   Loader2,
   HelpCircle,
   Clock,
-  FileText
+  FileText,
+  Sparkles,
+  Undo2,
+  Wand2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +49,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAdminModules, AdminModule } from "@/hooks/useAdminCourses";
 import { QuizEditor } from "@/components/admin/QuizEditor";
+import { editModuleContent } from "@/lib/courseGenerator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+// Quick-start instructions for the per-module AI editor (Task 3)
+const AI_EDIT_SUGGESTIONS = [
+  "Make this explanation shorter",
+  "Add a real-world Ontario example",
+  "Convert the key points into a flip-card list",
+  "Simplify the language for beginners",
+];
 
 export function ModuleManager() {
   const navigate = useNavigate();
@@ -70,6 +82,10 @@ export function ModuleManager() {
     has_quiz: false,
     quiz_pass_mark: 70
   });
+  // Per-module AI editing (Task 3)
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiEditing, setAiEditing] = useState(false);
+  const [contentBeforeAi, setContentBeforeAi] = useState<string | null>(null);
 
   // Fetch course title directly
   useEffect(() => {
@@ -90,6 +106,11 @@ export function ModuleManager() {
     fetchCourseTitle();
   }, [courseId]);
 
+  const resetAiState = () => {
+    setAiPrompt("");
+    setContentBeforeAi(null);
+  };
+
   const openNewModuleDialog = () => {
     setSelectedModule(null);
     setFormData({
@@ -101,6 +122,7 @@ export function ModuleManager() {
       has_quiz: false,
       quiz_pass_mark: 70
     });
+    resetAiState();
     setEditDialogOpen(true);
   };
 
@@ -115,7 +137,37 @@ export function ModuleManager() {
       has_quiz: module.has_quiz,
       quiz_pass_mark: module.quiz_pass_mark
     });
+    resetAiState();
     setEditDialogOpen(true);
+  };
+
+  const handleAiEdit = async (instruction: string) => {
+    const text = instruction.trim();
+    if (!text) {
+      toast.error("Enter an instruction for the AI");
+      return;
+    }
+    setAiEditing(true);
+    try {
+      const updated = await editModuleContent(formData.content, text, {
+        moduleTitle: formData.title,
+      });
+      setContentBeforeAi(formData.content);
+      setFormData((prev) => ({ ...prev, content: updated }));
+      setAiPrompt("");
+      toast.success("AI updated the content — review it, then Save Changes");
+    } catch (error: any) {
+      toast.error(error.message || "AI edit failed");
+    } finally {
+      setAiEditing(false);
+    }
+  };
+
+  const handleUndoAiEdit = () => {
+    if (contentBeforeAi === null) return;
+    setFormData((prev) => ({ ...prev, content: contentBeforeAi }));
+    setContentBeforeAi(null);
+    toast.success("Reverted to the previous content");
   };
 
   const handleSaveModule = async () => {
@@ -329,9 +381,75 @@ export function ModuleManager() {
                 id="module-content"
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Main module content (supports markdown)"
+                placeholder="Main module content (HTML)"
                 rows={8}
               />
+            </div>
+
+            {/* AI editing (Task 3) — instruct the AI to modify this module only */}
+            <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/[0.03] p-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+                  <Sparkles className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Edit with AI</p>
+                  <p className="text-xs text-muted-foreground">
+                    Describe a change — the AI rewrites only this module's content.
+                  </p>
+                </div>
+                {contentBeforeAi !== null && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleUndoAiEdit}
+                    disabled={aiEditing}
+                    className="gap-1 text-muted-foreground"
+                  >
+                    <Undo2 className="h-3.5 w-3.5" />
+                    Undo
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {AI_EDIT_SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setAiPrompt(s)}
+                    disabled={aiEditing}
+                    className="rounded-full border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-50"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder='e.g. "Add an example" or "Convert this section into a flip card"'
+                  rows={2}
+                  className="flex-1 text-sm"
+                  disabled={aiEditing}
+                />
+                <Button
+                  type="button"
+                  onClick={() => handleAiEdit(aiPrompt)}
+                  disabled={aiEditing || !aiPrompt.trim()}
+                  className="gap-2 sm:self-stretch"
+                >
+                  {aiEditing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-4 w-4" />
+                  )}
+                  {aiEditing ? "Editing…" : "Apply"}
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">

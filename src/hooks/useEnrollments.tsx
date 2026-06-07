@@ -53,19 +53,19 @@ export function useEnrollments() {
         .order('enrolled_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Filter enrollments to only show courses the user has access to
-      const enrollmentsWithAccess = await Promise.all(
-        (data || []).map(async (enrollment) => {
-          const { data: hasAccess } = await supabase.rpc('user_has_course_access', {
-            _user_id: user.id,
-            _course_id: enrollment.course_id
-          });
-          return hasAccess ? enrollment : null;
-        })
+
+      // An enrollment is itself a permanent grant of access: once a learner has
+      // enrolled in (and especially completed) a course, later admin changes to
+      // the course's access_type / SME-scope / allocations must NEVER make that
+      // course disappear from their "My Courses", dashboard, or certificates.
+      // We therefore do NOT re-filter enrollments by current course-access rules.
+      // We only drop rows whose course no longer exists (e.g. the course was
+      // deleted) so cards never render with null course data.
+      const validEnrollments = (data || []).filter(
+        (enrollment) => enrollment.course != null
       );
-      
-      setEnrollments(enrollmentsWithAccess.filter(Boolean) as Enrollment[]);
+
+      setEnrollments(validEnrollments as Enrollment[]);
     } catch (err) {
       setError(err as Error);
     } finally {

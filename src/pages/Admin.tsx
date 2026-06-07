@@ -12,6 +12,7 @@ import { RoleSwitcher } from "@/components/admin/RoleSwitcher";
 import { CourseManagement } from "@/pages/admin/CourseManagement";
 import { CourseEditor } from "@/components/admin/CourseEditor";
 import { ModuleManager } from "@/components/admin/ModuleManager";
+import { AICourseGenerator } from "@/components/admin/AICourseGenerator";
 import { CourseAllocation } from "@/components/admin/CourseAllocation";
 import { SMEManagement } from "@/components/admin/SMEManagement";
 import { SMEReports } from "@/components/admin/SMEReports";
@@ -230,6 +231,7 @@ const Admin = () => {
   const path = location.pathname;
   const isSMEManagement = path === "/admin/smes";
   const isCourseManagement = path === "/admin/courses";
+  const isCourseGenerate = path === "/admin/courses/generate";
   const isCourseNew = path === "/admin/courses/new";
   const isCourseEdit = path.match(/^\/admin\/courses\/[^/]+\/edit$/);
   const isModuleManager = path.match(/^\/admin\/courses\/[^/]+\/modules$/);
@@ -295,6 +297,14 @@ const Admin = () => {
     return (
       <AdminLayout>
         <CourseManagement />
+      </AdminLayout>
+    );
+  }
+
+  if (isCourseGenerate) {
+    return (
+      <AdminLayout>
+        <AICourseGenerator />
       </AdminLayout>
     );
   }

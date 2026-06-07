@@ -57,6 +57,7 @@ const CoursePlayer = () => {
   const [finalQuizScore, setFinalQuizScore] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [course, setCourse] = useState<Course | null>(null);
+  const [resolvingCourse, setResolvingCourse] = useState(true);
   const [enrollment, setEnrollment] = useState<any>(null);
   const [practiceQuizData, setPracticeQuizData] = useState<AIQuizWithQuestions | null>(null);
   const [showPracticeQuiz, setShowPracticeQuiz] = useState(false);
@@ -64,13 +65,52 @@ const CoursePlayer = () => {
 
   const hasCertificate = certificates.some(c => c.course_id === courseId);
 
-  // Find course and enrollment
+  // Resolve the course. The catalogue (useCourses) only returns courses the user
+  // can currently discover (public / allocated), so an enrolled learner opening a
+  // private or SME-specific course they already completed would otherwise hit
+  // "Course not found". Fall back to fetching the course directly by id — allowed
+  // for enrolled users by the enrolled-courses RLS policy.
   useEffect(() => {
-    if (courseId && courses.length > 0) {
-      const foundCourse = courses.find(c => c.id === courseId);
-      setCourse(foundCourse || null);
-    }
-  }, [courseId, courses]);
+    if (!courseId) return;
+    let cancelled = false;
+
+    const resolve = async () => {
+      const fromCatalog = courses.find(c => c.id === courseId);
+      if (fromCatalog) {
+        if (!cancelled) {
+          setCourse(fromCatalog);
+          setResolvingCourse(false);
+        }
+        return;
+      }
+      // Wait until the catalogue has finished loading before deciding it's absent.
+      if (coursesLoading) return;
+
+      const { data } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', courseId)
+        .maybeSingle();
+
+      if (!cancelled) {
+        setCourse(
+          data
+            ? ({
+                ...data,
+                access_type: (data as any).access_type ?? 'public',
+                final_quiz_id: (data as any).final_quiz_id ?? null,
+              } as unknown as Course)
+            : null
+        );
+        setResolvingCourse(false);
+      }
+    };
+
+    resolve();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, courses, coursesLoading]);
 
   useEffect(() => {
     if (courseId && enrollments.length > 0) {
@@ -316,7 +356,7 @@ const CoursePlayer = () => {
   );
 
   const currentModule = modules.find(m => m.id === currentModuleId);
-  const loading = authLoading || coursesLoading || enrollmentsLoading || modulesLoading;
+  const loading = authLoading || coursesLoading || enrollmentsLoading || modulesLoading || resolvingCourse;
 
   if (loading) {
     return (

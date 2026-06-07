@@ -1,7 +1,7 @@
 export type LessonBlock =
   | { type: "summary"; body: string }
   | { type: "highlight"; stat: string; label: string }
-  | { type: "callout"; variant: "info" | "tip" | "warning" | "important"; title?: string; body: string }
+  | { type: "callout"; variant: "info" | "tip" | "warning" | "important"; title?: string; body: string; bodyHtml?: string }
   | { type: "keyTerms"; items: { term: string; definition: string }[] }
   | { type: "flashcards"; items: { front: string; back: string }[] }
   | { type: "html"; html: string }
@@ -18,8 +18,6 @@ export interface ParsedLesson {
   summary: string | null;
   chapters: LessonChapter[];
 }
-
-const STAT_REGEX = /\b(\d{1,3}(?:,\d{3})*(?:\.\d+)?\s?(?:%|percent|million|billion|tonnes?|kg|tons?|kilograms?))\b/i;
 
 const CALLOUT_PREFIXES: { match: RegExp; variant: "info" | "tip" | "warning" | "important" }[] = [
   { match: /^(warning|caution)[:\-\s]/i, variant: "warning" },
@@ -62,37 +60,28 @@ function extractKeyTerms(ul: HTMLUListElement): { term: string; definition: stri
   return items;
 }
 
-function detectCallout(p: HTMLParagraphElement): { variant: "info" | "tip" | "warning" | "important"; title?: string; body: string } | null {
+function detectCallout(p: HTMLParagraphElement): { variant: "info" | "tip" | "warning" | "important"; title?: string; body: string; bodyHtml: string } | null {
   const text = textOf(p);
   for (const { match, variant } of CALLOUT_PREFIXES) {
     const m = text.match(match);
     if (m) {
       const title = m[1].replace(/^./, (c) => c.toUpperCase());
       const body = text.slice(m[0].length).trim();
-      return { variant, title, body };
+      // Strip the same leading prefix from the inner HTML so inline links and
+      // formatting are preserved when we render the callout in place of the
+      // original paragraph (avoids duplicating the text).
+      const bodyHtml = p.innerHTML.replace(match, "").replace(/^[\s:–—-]+/, "").trim();
+      return { variant, title, body, bodyHtml };
     }
   }
   return null;
-}
-
-function findStat(text: string): { stat: string; label: string } | null {
-  const m = text.match(STAT_REGEX);
-  if (!m) return null;
-  const stat = m[1];
-  let label = text.replace(m[0], "").trim();
-  label = label.replace(/^[,.\-:]\s*/, "").replace(/\s+/g, " ").trim();
-  if (!label) return null;
-  return { stat, label };
 }
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function processGroupNodes(
-  nodes: HTMLElement[],
-  ctx: { highlightCount: number }
-): LessonBlock[] {
+function processGroupNodes(nodes: HTMLElement[]): LessonBlock[] {
   const out: LessonBlock[] = [];
   // Track if we already emitted a flashcard set in this group to avoid duplicate KeyTerms+Flashcards visual noise
   const emittedTermsThisGroup = new Set<HTMLElement>();
@@ -108,31 +97,23 @@ function processGroupNodes(
     if (tag === "P") {
       const callout = detectCallout(el as HTMLParagraphElement);
       if (callout) {
+        // Render ONLY the callout. Its bodyHtml preserves the paragraph's inline
+        // links/formatting, so we drop the original <p> to avoid showing the same
+        // text twice (callout + paragraph).
         out.push({ type: "callout", ...callout });
-        out.push({ type: "html", html: el.outerHTML });
         continue;
       }
-      const txt = textOf(el);
-      if (ctx.highlightCount < 4 && txt.length < 220) {
-        const stat = findStat(txt);
-        if (stat) {
-          // Always emit the full paragraph so inline links/strong/em are preserved.
-          // The highlight card only adds visual emphasis on top.
-          out.push({ type: "html", html: el.outerHTML });
-          out.push({ type: "highlight", stat: stat.stat, label: stat.label });
-          ctx.highlightCount++;
-          continue;
-        }
-      }
+      // Note: short statistic paragraphs are rendered as plain paragraphs only.
+      // We intentionally do NOT also emit a "highlight" stat card, which would
+      // duplicate the very same number/sentence already shown in the paragraph.
       out.push({ type: "html", html: el.outerHTML });
       continue;
     }
 
     if (tag === "BLOCKQUOTE") {
-      // Emit both: the callout for emphasis + the original blockquote HTML
-      // so inline links/formatting inside the quote are never lost.
-      out.push({ type: "callout", variant: "info", body: textOf(el) });
-      out.push({ type: "html", html: el.outerHTML });
+      // Render ONLY the callout; its bodyHtml carries the quote's inline
+      // formatting, so the original blockquote is not emitted as a duplicate.
+      out.push({ type: "callout", variant: "info", body: textOf(el), bodyHtml: el.innerHTML });
       continue;
     }
 
@@ -150,9 +131,9 @@ function processGroupNodes(
             });
           }
           emittedTermsThisGroup.add(ul);
-          // Also keep the original list HTML so any inline links/formatting
-          // inside list items aren't dropped from the rendered lesson.
-          out.push({ type: "html", html: el.outerHTML });
+          // Render ONLY the interactive cards. The term + definition text is fully
+          // contained in the cards/flashcards, so we drop the original <ul> to
+          // avoid duplicating the list content below the cards.
           continue;
         }
       }
@@ -229,13 +210,12 @@ export function parseLesson(html: string, fallbackTitle = "Introduction"): Parse
     }
   }
 
-  const ctx = { highlightCount: 0 };
   const chapters: LessonChapter[] = [];
 
   const buildChapter = (id: string, title: string, nodes: HTMLElement[]): LessonChapter | null => {
     // Chapter heroes render the heading only — no introductory hook text.
     // All paragraph content stays in the body so nothing is duplicated or lost.
-    const blocks = processGroupNodes(nodes, ctx);
+    const blocks = processGroupNodes(nodes);
     if (blocks.length === 0) return null;
     return {
       id,
@@ -261,7 +241,7 @@ export function parseLesson(html: string, fallbackTitle = "Introduction"): Parse
 
   // If no chapters were produced (raw content with no headings), fall back to one chapter with everything
   if (chapters.length === 0) {
-    const blocks = processGroupNodes(children.filter((c) => !c.getAttribute("data-consumed")), ctx);
+    const blocks = processGroupNodes(children.filter((c) => !c.getAttribute("data-consumed")));
     chapters.push({
       id: "ch-0",
       title: fallbackTitle,

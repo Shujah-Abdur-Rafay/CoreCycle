@@ -113,8 +113,30 @@ export function useModules(courseId: string) {
       .select()
       .single();
 
-    if (error) throw error;
-    
+    if (error) {
+      // A completion row already exists for this user+module (e.g. the module was
+      // started/completed before, and local state hadn't loaded yet — this can
+      // race with fetchCompletions). Fetch and reuse the existing row instead of
+      // failing with a 409 duplicate-key error.
+      if ((error as { code?: string }).code === '23505') {
+        const { data: existing } = await supabase
+          .from('module_completions')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('module_id', moduleId)
+          .maybeSingle();
+        if (existing) {
+          setCompletions(prev =>
+            prev.some(c => c.id === (existing as ModuleCompletion).id)
+              ? prev
+              : [...prev, existing as ModuleCompletion]
+          );
+          return existing as ModuleCompletion;
+        }
+      }
+      throw error;
+    }
+
     setCompletions(prev => [...prev, data as ModuleCompletion]);
     return data;
   };

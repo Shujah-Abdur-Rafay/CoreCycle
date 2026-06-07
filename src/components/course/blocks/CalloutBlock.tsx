@@ -32,9 +32,12 @@ interface CalloutBlockProps {
   variant: keyof typeof variants;
   title?: string;
   body: string;
+  /** Optional rich body (HTML) — preserves inline links/formatting from the
+   *  source paragraph so the original paragraph can be dropped without loss. */
+  bodyHtml?: string;
 }
 
-export function CalloutBlock({ variant, title, body }: CalloutBlockProps) {
+export function CalloutBlock({ variant, title, body, bodyHtml }: CalloutBlockProps) {
   const v = variants[variant];
   const Icon = v.icon;
   return (
@@ -44,7 +47,14 @@ export function CalloutBlock({ variant, title, body }: CalloutBlockProps) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm mb-1">{title || v.defaultTitle}</p>
-        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+        {bodyHtml ? (
+          <div
+            className="text-sm text-muted-foreground leading-relaxed [&_a]:text-primary [&_a]:underline [&_strong]:text-foreground [&_strong]:font-semibold"
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+        )}
       </div>
     </div>
   );

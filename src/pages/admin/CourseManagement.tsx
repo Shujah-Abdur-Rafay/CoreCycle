@@ -12,7 +12,8 @@ import {
   BookOpen,
   Users,
   Clock,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,10 +114,20 @@ export function CourseManagement() {
             Create, edit, and manage training courses
           </p>
         </div>
-        <Button onClick={() => navigate("/admin/courses/new")} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Course
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/admin/courses/generate")}
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4 text-purple-600" />
+            Generate with AI
+          </Button>
+          <Button onClick={() => navigate("/admin/courses/new")} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Course
+          </Button>
+        </div>
       </motion.div>
 
       {/* Search and Stats */}
