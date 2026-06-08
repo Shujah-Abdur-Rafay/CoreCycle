@@ -10,15 +10,13 @@
 import {
   extractTextFromFile,
   validateContent,
+  callOpenAIChat,
   type GeneratedQuestion,
 } from "./openaiQuizGenerator";
 
 // Re-export so UI components only need to import from one place.
 export { extractTextFromFile, validateContent };
 export type { GeneratedQuestion };
-
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 // ─── Generated shapes ─────────────────────────────────────────────────────────
 
@@ -82,94 +80,33 @@ material; otherwise speak qualitatively.
 Return ONLY valid HTML inside the "content" field. No markdown, no code fences.
 `.trim();
 
-// ─── Model fallback list (shared convention with the quiz generator) ──────────
-
-function getModelList(): string[] {
-  return [
-    import.meta.env.VITE_OPENAI_MODEL,
-    "gpt-4o",        // most capable — best for long structured course content
-    "gpt-4o-mini",   // fast / cost-efficient fallback
-    "gpt-3.5-turbo", // universal last resort
-  ].filter(Boolean) as string[];
-}
-
 /**
- * Call OpenAI chat completions expecting a JSON object back, with automatic
- * model fallback on rate limits / transient errors. Returns the parsed object.
+ * Call the OpenAI chat proxy (Supabase edge function) expecting a JSON object
+ * back, then parse it. Model fallback / key handling live server-side.
  */
 async function callOpenAIJson<T>(
   systemPrompt: string,
   userPrompt: string,
   opts: { maxTokens?: number; temperature?: number } = {}
 ): Promise<T> {
-  if (!OPENAI_API_KEY) {
-    throw new Error(
-      "OpenAI API key is not configured. Set VITE_OPENAI_API_KEY in your .env file."
-    );
-  }
-
   const { maxTokens = 8000, temperature = 0.6 } = opts;
-  const MODELS = getModelList();
-  let lastError: Error | null = null;
 
-  for (const modelName of MODELS) {
-    try {
-      const response = await fetch(OPENAI_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature,
-          max_tokens: maxTokens,
-          response_format: { type: "json_object" },
-        }),
-      });
+  const rawText = await callOpenAIChat({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature,
+    maxTokens,
+    jsonMode: true,
+  });
 
-      if (response.status === 429) {
-        lastError = new Error(`Rate limit (429) on model ${modelName}`);
-        continue; // try next model
-      }
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`OpenAI API error (${response.status}): ${errorBody}`);
-      }
-
-      const data = await response.json();
-      const rawText: string = data.choices?.[0]?.message?.content ?? "";
-
-      let jsonText = rawText.trim();
-      if (jsonText.startsWith("```")) {
-        jsonText = jsonText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-      }
-
-      return JSON.parse(jsonText) as T;
-    } catch (error: any) {
-      lastError = error;
-      // Account-level quota/billing errors won't be fixed by trying another model
-      if (
-        error.message?.includes("insufficient_quota") ||
-        error.message?.includes("billing") ||
-        error.message?.includes("402")
-      ) {
-        break;
-      }
-      // Otherwise fall through to the next model
-    }
+  let jsonText = rawText.trim();
+  if (jsonText.startsWith("```")) {
+    jsonText = jsonText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   }
 
-  throw new Error(
-    `AI request failed after trying all available models. Last error: ${
-      lastError?.message ?? "unknown"
-    }`
-  );
+  return JSON.parse(jsonText) as T;
 }
 
 // ─── Light HTML sanitisation ──────────────────────────────────────────────────

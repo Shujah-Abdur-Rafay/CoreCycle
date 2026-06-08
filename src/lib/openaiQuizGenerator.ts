@@ -1,9 +1,54 @@
 // ─── OpenAI Quiz Generator ────────────────────────────────────────────────────
 // Drop-in replacement for geminiQuizGenerator.ts
-// Uses OpenAI Chat Completions API — model-agnostic, env-configurable.
+// Calls the `openai-chat` Supabase edge function (server-side proxy) so the API
+// key never ships to the browser and there are no CORS issues with api.openai.com.
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+import { supabase } from '@/integrations/supabase/client';
+
+// ─── Shared OpenAI proxy call ─────────────────────────────────────────────────
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Send a chat request to the server-side OpenAI proxy and return the assistant's
+ * message content. Model fallback and the API key are handled by the edge
+ * function; an optional VITE_OPENAI_MODEL override is passed through first.
+ */
+export async function callOpenAIChat(opts: {
+  messages: ChatMessage[];
+  temperature?: number;
+  maxTokens?: number;
+  jsonMode?: boolean;
+}): Promise<string> {
+  const { data, error } = await supabase.functions.invoke('openai-chat', {
+    body: {
+      messages: opts.messages,
+      temperature: opts.temperature,
+      maxTokens: opts.maxTokens,
+      jsonMode: opts.jsonMode ?? true,
+      models: getModelList(),
+    },
+  });
+
+  if (error) {
+    // Surface the function's JSON error body when present
+    const detail =
+      (error as { context?: { body?: unknown } })?.context?.body ?? error.message;
+    throw new Error(typeof detail === 'string' ? detail : error.message);
+  }
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  const content = data?.content;
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new Error('AI returned an empty response.');
+  }
+  return content;
+}
 
 // ─── Interfaces (identical to Gemini version for full component compatibility) ─
 
@@ -49,10 +94,6 @@ export async function generateQuizFromText(
     topic?: string;
   } = {}
 ): Promise<QuizGenerationResult> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OpenAI API key is not configured. Set VITE_OPENAI_API_KEY in your .env file.');
-  }
-
   const {
     numQuestions = 5,
     difficulty = 'medium',
@@ -92,109 +133,51 @@ OUTPUT FORMAT (JSON only):
   "difficulty": "${difficulty}"
 }`;
 
-  const MODELS = getModelList();
-  let lastError: Error | null = null;
+  const rawText = await callOpenAIChat({
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.7,
+    maxTokens: 4096,
+    jsonMode: true,
+  });
 
-  for (const modelName of MODELS) {
-    try {
-      console.log(`[OpenAI] Attempting quiz generation with model: ${modelName}...`);
-
-      const body: Record<string, unknown> = {
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 4096,
-      };
-
-      // json_object mode guarantees valid JSON — supported by gpt-4o / gpt-4o-mini / gpt-3.5-turbo-1106+
-      // Older model versions silently ignore this field, so it's always safe to include.
-      body.response_format = { type: 'json_object' };
-
-      const response = await fetch(OPENAI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      // Rate limit — try next model
-      if (response.status === 429) {
-        const retryAfter = response.headers.get('retry-after');
-        console.warn(`[OpenAI] Rate limit on ${modelName}. retry-after: ${retryAfter ?? 'unknown'}s. Trying next model...`);
-        lastError = new Error(`Rate limit (429) on model ${modelName}`);
-        continue;
-      }
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`OpenAI API error (${response.status}): ${errorBody}`);
-      }
-
-      const data = await response.json();
-      const rawText: string = data.choices?.[0]?.message?.content ?? '';
-
-      // Defensive: strip any accidental markdown fences even with json_object mode
-      let jsonText = rawText.trim();
-      if (jsonText.startsWith('```')) {
-        jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-      }
-
-      const parsed = JSON.parse(jsonText) as QuizGenerationResult;
-
-      // Validate top-level structure
-      if (!parsed.questions || !Array.isArray(parsed.questions)) {
-        throw new Error('Invalid response: missing questions array');
-      }
-
-      // Validate each question
-      parsed.questions.forEach((q, idx) => {
-        if (!q.question) {
-          throw new Error(`Question ${idx + 1}: missing question text`);
-        }
-        if (!Array.isArray(q.options) || q.options.length !== 4) {
-          throw new Error(`Question ${idx + 1}: must have exactly 4 options`);
-        }
-        if (typeof q.correctAnswerIndex !== 'number' || q.correctAnswerIndex < 0 || q.correctAnswerIndex > 3) {
-          throw new Error(`Question ${idx + 1}: correctAnswerIndex must be 0–3`);
-        }
-        if (!q.explanation) {
-          throw new Error(`Question ${idx + 1}: missing explanation`);
-        }
-      });
-
-      // Ensure difficulty is set (some models omit it)
-      if (!parsed.difficulty) {
-        parsed.difficulty = difficulty;
-      }
-
-      console.log(`[OpenAI] Successfully generated quiz using ${modelName}`);
-      return parsed;
-
-    } catch (error: any) {
-      console.warn(`[OpenAI] Model ${modelName} failed:`, error.message);
-      lastError = error;
-
-      // Quota / billing errors apply to the whole account — stop trying
-      if (
-        error.message?.includes('insufficient_quota') ||
-        error.message?.includes('billing') ||
-        error.message?.includes('402')
-      ) {
-        break;
-      }
-
-      // Continue to next model for all other errors
-    }
+  // Defensive: strip any accidental markdown fences even with json_object mode
+  let jsonText = rawText.trim();
+  if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
   }
 
-  throw new Error(
-    `Failed to generate quiz after trying all available models. Last error: ${lastError?.message ?? 'unknown'}`
-  );
+  const parsed = JSON.parse(jsonText) as QuizGenerationResult;
+
+  // Validate top-level structure
+  if (!parsed.questions || !Array.isArray(parsed.questions)) {
+    throw new Error('Invalid response: missing questions array');
+  }
+
+  // Validate each question
+  parsed.questions.forEach((q, idx) => {
+    if (!q.question) {
+      throw new Error(`Question ${idx + 1}: missing question text`);
+    }
+    if (!Array.isArray(q.options) || q.options.length !== 4) {
+      throw new Error(`Question ${idx + 1}: must have exactly 4 options`);
+    }
+    if (typeof q.correctAnswerIndex !== 'number' || q.correctAnswerIndex < 0 || q.correctAnswerIndex > 3) {
+      throw new Error(`Question ${idx + 1}: correctAnswerIndex must be 0–3`);
+    }
+    if (!q.explanation) {
+      throw new Error(`Question ${idx + 1}: missing explanation`);
+    }
+  });
+
+  // Ensure difficulty is set (some models omit it)
+  if (!parsed.difficulty) {
+    parsed.difficulty = difficulty;
+  }
+
+  return parsed;
 }
 
 // ─── File extraction (unchanged from Gemini version) ─────────────────────────
