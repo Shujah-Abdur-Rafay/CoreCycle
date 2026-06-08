@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, RotateCw, Layers } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCw, Layers, Eye, MousePointerClick } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FlashcardSetProps {
@@ -39,8 +39,17 @@ export function FlashcardSet({ items }: FlashcardSetProps) {
       </div>
 
       <div
-        className="relative h-44 cursor-pointer perspective select-none"
+        role="button"
+        tabIndex={0}
+        aria-label={flipped ? "Tap to see the term" : "Tap to reveal the definition"}
+        className="group relative h-48 cursor-pointer perspective select-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         onClick={() => setFlipped((f) => !f)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setFlipped((f) => !f);
+          }
+        }}
         style={{ perspective: "1000px" }}
       >
         <AnimatePresence mode="wait">
@@ -50,20 +59,30 @@ export function FlashcardSet({ items }: FlashcardSetProps) {
             animate={{ rotateY: 0, opacity: 1 }}
             exit={{ rotateY: flipped ? 90 : -90, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="absolute inset-0 rounded-lg border-2 border-primary/30 bg-card flex items-center justify-center p-6 text-center shadow-md"
+            className={`absolute inset-0 rounded-lg border-2 flex flex-col items-center justify-center p-6 text-center shadow-md transition-colors ${
+              flipped
+                ? "border-primary bg-primary/5"
+                : "border-primary/30 bg-card group-hover:border-primary/60"
+            }`}
             style={{ transformStyle: "preserve-3d" }}
           >
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                {flipped ? "Definition" : "Term"}
-              </p>
-              <p className={flipped ? "text-base text-foreground" : "text-xl font-display font-semibold text-foreground"}>
-                {flipped ? card.back : card.front}
-              </p>
-              {!flipped && (
-                <p className="mt-3 text-[11px] text-muted-foreground">Tap to reveal</p>
-              )}
-            </div>
+            <span
+              className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                flipped
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {flipped ? <Eye className="h-3 w-3" /> : null}
+              {flipped ? "Definition" : "Term"}
+            </span>
+            <p className={flipped ? "text-base text-foreground" : "text-xl font-display font-semibold text-foreground"}>
+              {flipped ? card.back : card.front}
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-medium text-primary/80">
+              <MousePointerClick className="h-3.5 w-3.5" />
+              {flipped ? "Tap to flip back to the term" : "Tap the card to reveal the answer"}
+            </span>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -73,7 +92,7 @@ export function FlashcardSet({ items }: FlashcardSetProps) {
           <ChevronLeft className="h-4 w-4 mr-1" /> Prev
         </Button>
         <Button variant="ghost" size="sm" onClick={() => setFlipped((f) => !f)}>
-          <RotateCw className="h-4 w-4 mr-1" /> Flip
+          <RotateCw className="h-4 w-4 mr-1" /> {flipped ? "Show term" : "Show answer"}
         </Button>
         <Button variant="outline" size="sm" onClick={next} disabled={items.length < 2}>
           Next <ChevronRight className="h-4 w-4 ml-1" />
