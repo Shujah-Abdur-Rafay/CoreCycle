@@ -34,10 +34,25 @@ export async function callOpenAIChat(opts: {
   });
 
   if (error) {
-    // Surface the function's JSON error body when present
-    const detail =
-      (error as { context?: { body?: unknown } })?.context?.body ?? error.message;
-    throw new Error(typeof detail === 'string' ? detail : error.message);
+    // On a non-2xx, supabase-js puts the raw Response in error.context.
+    // Read our function's JSON `{ error }` body so the real reason surfaces
+    // (e.g. the OpenAI 401/quota message) instead of a generic status error.
+    let detail = error.message;
+    const ctx = (error as { context?: unknown }).context;
+    if (ctx instanceof Response) {
+      try {
+        const body = await ctx.clone().json();
+        if (body?.error) detail = body.error;
+      } catch {
+        try {
+          const text = await ctx.clone().text();
+          if (text) detail = text;
+        } catch {
+          /* keep error.message */
+        }
+      }
+    }
+    throw new Error(detail);
   }
   if (data?.error) {
     throw new Error(data.error);
